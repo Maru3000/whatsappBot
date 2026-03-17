@@ -1,6 +1,9 @@
 // Import Express.js
 const express = require('express');
 
+//add axios
+const axios = require('axios');
+
 // Create an Express app
 const app = express();
 
@@ -24,7 +27,7 @@ app.get('/', (req, res) => {
 });
 
 // Route for POST requests
-app.post('/', (req, res) => {
+app.post('/', async (req, res) => {
 
   console.log("\nWebhook received\n");
 
@@ -35,6 +38,32 @@ app.post('/', (req, res) => {
 
   console.log("Phone:", phone);
   console.log("Message:", message);
+
+  try {
+    await axios.post(
+      `https://graph.facebook.com/v17.0/996589823541367/messages`,
+      {
+        messaging_product: "whatsapp",
+        to: phone,
+        text: {
+          body: "אהלן, תודה שיצרת איתי קשר, אני מרקו ואני הנדימאן, איך אוכל לעזור ואיפה?"
+        }
+      },
+      {
+        headers: {
+          Authorization: `Bearer EAAVccSnkeGUBQ6fUUGjEyccOW2jVmla4ax2CZCQCX5B8bPMLSz99cjaZCOZBF814cJ9CHiVnPKGrJVlkIC00iKKQa22T9VlmJeg2kmnCVtbtXEg46ImPD721YeFD9AoaY7AmfzwbiyzgXT4ZAWMeTCOhRpUisnutewYzmVXnydCXyyCZBrA2IrLKMEpWizmB2MeWeT1vzC0QxkZANjRScfxTkmxdV1ip9Te0WZC4udbWg7FbLfTgnB5Qm682avJtXq9Wxkd73wsZBFpZBDjSyfCAZD`,
+          "Content-Type": "application/json"
+        }
+      }
+    );
+
+    console.log("Reply sent");
+
+  } catch (err) {
+    console.error("Error sending message:",
+      err.response ? err.response.data : err.message
+    );
+  }
 
   res.status(200).end();
 
