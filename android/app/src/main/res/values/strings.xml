@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Expense Recorder</string>
+    <string name="widget_description">Tap to record a cash expense in shekels</string>
+    <string name="record_expense">💰 Record</string>
+    <string name="listening">Listening…</string>
+    <string name="no_expenses">No expenses yet.\nTap the widget to record one.</string>
+    <string name="clear_all">Clear All</string>
+    <string name="total_label">Total: ₪%1$.2f</string>
+    <string name="amount_format">₪%1$.0f</string>
+    <string name="permission_needed">Microphone permission is required</string>
+    <string name="could_not_parse">Could not understand the expense. Try again.</string>
+    <string name="saved">Saved: ₪%1$.0f – %2$s</string>
+    <string name="connect_onedrive">Connect to OneDrive</string>
+</resources>
