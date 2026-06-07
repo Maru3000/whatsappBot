@@ -1,6 +1,6 @@
 ---
 title: Android Voice Expense Recorder
-status: draft
+status: final
 created: 2026-06-07
 updated: 2026-06-07
 ---
@@ -73,14 +73,14 @@ Total time: ~4 seconds. Zero typing.
 
 ### FR-3 — Parsing
 
-- **FR-3.1** The transcribed text is parsed for: (a) a numeric amount — the first number found, integer or decimal; (b) a subject — the remaining text after the amount, stored exactly as transcribed, no normalisation or category mapping.
+- **FR-3.1** The transcribed text is parsed for: (a) a numeric amount — the **first** number found, integer or decimal, regardless of other numbers in the utterance (e.g. "50 for 3 coffees" → amount ₪50, subject "for 3 coffees"); (b) a subject — the full remaining text after removing the leading number, stored exactly as transcribed, no normalisation or category mapping.
 - **FR-3.2** Currency is always ILS (₪). No currency detection or multi-currency support.
 - **FR-3.3** Date and time are captured from the device clock at the moment the recording stops.
 - **FR-3.4** If no numeric amount can be extracted, the entry is rejected and the user is shown an error with the option to re-record. [ASSUMPTION: a re-record prompt is sufficient; no manual fallback text input needed.]
 
 ### FR-4 — OneDrive Excel Integration
 
-- **FR-4.1** The app writes to a single Excel file named `Expenses.xlsx` located in the root of the user's OneDrive.
+- **FR-4.1** The user can configure the target Excel file path (filename and OneDrive folder) from the settings screen. The default on first run is `Expenses.xlsx` in the OneDrive root. A file picker or manual path entry is provided.
 - **FR-4.2** Each calendar month has its own sheet, named `MMM YYYY` (e.g., `Jun 2026`). If the sheet does not exist, the app creates it automatically with a header row.
 - **FR-4.3** Each row in the sheet contains four columns in this order: `Date` (DD/MM/YYYY) | `Time` (HH:MM) | `Amount` (numeric, no currency symbol) | `Subject` (text).
 - **FR-4.4** New rows are appended at the end of the sheet — no sorting, no overwriting.
@@ -90,7 +90,7 @@ Total time: ~4 seconds. Zero typing.
 
 - **FR-5.1** The user signs in with a Microsoft account (personal or work) via MSAL on first launch.
 - **FR-5.2** The auth token is persisted; the user is not prompted to sign in again unless the token expires or is revoked.
-- **FR-5.3** A settings screen (reachable from the app, not the widget) allows the user to sign out and sign in with a different account.
+- **FR-5.3** A settings screen (reachable from the app, not the widget) allows the user to: sign out and sign in with a different account; configure the target Excel file path (FR-4.1).
 
 ---
 
@@ -99,7 +99,7 @@ Total time: ~4 seconds. Zero typing.
 | Concern | Requirement |
 |---------|-------------|
 | **Speed** | Tap → confirmed write ≤ 5 s on a standard LTE connection |
-| **Reliability** | On network failure, display a clear error and offer retry; do not silently lose entries |
+| **Reliability** | On network failure or connectivity loss at any point in the flow, display a clear error notification and offer retry; do not silently lose entries. If the app terminates after STT completes but before the OneDrive write succeeds, this is an acknowledged v1 data-loss risk (no persistent queue). |
 | **Privacy** | Voice audio is processed via Android's built-in STT; raw audio is never stored or transmitted to a third-party server |
 | **Permissions** | Request only: `RECORD_AUDIO`, `INTERNET`. No location, contacts, or storage beyond OneDrive API calls |
 | **Platform** | Android 8.0 (API 26) and above |
@@ -124,5 +124,5 @@ Total time: ~4 seconds. Zero typing.
 
 | # | Question | Owner | Revisit |
 |---|----------|-------|---------|
-| OQ-1 | Should `Expenses.xlsx` filename/location be configurable, or is root/`Expenses.xlsx` fixed for v1? | Root | Before architecture |
+| ~~OQ-1~~ | ~~Should `Expenses.xlsx` filename/location be configurable?~~ | ~~Root~~ | **Resolved:** Configurable via settings screen; default is root/`Expenses.xlsx`. |
 | OQ-2 | Android built-in SpeechRecognizer vs. cloud STT API — accuracy trade-off to evaluate | Architect | Before FR-3 implementation |
