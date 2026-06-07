@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4]
+stepsCompleted: [1, 2, 3, 4, 5]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-whatsappBot-2026-06-07/prd.md
 notes: 'Storage: Google Sheets API v4. Auth: Google Sign-In OAuth 2.0. Target spreadsheet ID: 1RErU26Ln2-uW4FMxezn_OZ5WWkvXVvYU. MSAL/OneDrive stack dropped.'
@@ -149,3 +149,98 @@ The existing scaffold (AGP 8.3.2 / Kotlin 1.9.23 / ViewBinding) is retained as-i
 - `VoiceCaptureActivity` depends on `GoogleAuthManager` being initialised (token available) before attempting a write.
 - `ExpenseWidget` has no direct dependency on any repository — it only fires an Intent to `VoiceCaptureActivity`.
 - `ExpenseRepository` is the only component that touches the network; all others are pure or UI-only.
+
+## Implementation Patterns & Consistency Rules
+
+### Naming Patterns
+
+**Kotlin code (all agents MUST follow):**
+- Classes/Objects: `PascalCase` — `ExpenseRepository`, `WriteResult`
+- Functions/variables: `camelCase` — `appendExpense()`, `spreadsheetId`
+- Constants: `SCREAMING_SNAKE_CASE` in companion object — `DEFAULT_SPREADSHEET_ID`
+- Package: `com.maru.expenserecorder.<layer>` — e.g. `com.maru.expenserecorder.data`
+
+**Android resources (`snake_case` — enforced by Android tooling):**
+- Layouts: `activity_voice_capture.xml`, `widget_expense.xml`
+- Strings: `error_network_unavailable`, `label_recording`
+- View IDs: `btn_cancel`, `tv_status`
+
+**SharedPreferences keys:** defined as constants in a `PrefsKeys` object — `PREF_SPREADSHEET_ID`, `PREF_ACCOUNT_NAME`. Never use inline strings.
+
+### Package Structure
+
+```
+com.maru.expenserecorder/
+  widget/        — ExpenseWidget (AppWidgetProvider)
+  ui/
+    capture/     — VoiceCaptureActivity, VoiceCaptureViewModel, CaptureState
+    settings/    — SettingsActivity
+  data/
+    ExpenseRepository.kt
+    WriteResult.kt
+    Expense.kt
+  auth/          — GoogleAuthManager
+  parser/        — ExpenseParser
+```
+
+### Format Patterns
+
+**Date/time (match PRD exactly — no deviations):**
+- Date stored in sheet: `DD/MM/YYYY` — use `DateTimeFormatter.ofPattern("dd/MM/yyyy")`
+- Time stored in sheet: `HH:MM` — use `DateTimeFormatter.ofPattern("HH:mm")`
+- Amount stored: `Double`, no currency symbol in the cell
+- Always use `java.time` — never `SimpleDateFormat` (not thread-safe)
+
+**Canonical sealed classes (define once, never redefine):**
+
+```kotlin
+sealed class WriteResult {
+    object Success : WriteResult()
+    object NetworkError : WriteResult()
+    object AuthError : WriteResult()
+    data class SheetsError(val message: String) : WriteResult()
+}
+
+sealed class CaptureState {
+    object Idle : CaptureState()
+    object Listening : CaptureState()
+    object Processing : CaptureState()
+    data class Done(val result: WriteResult) : CaptureState()
+}
+```
+
+### Process Patterns
+
+**Coroutine scopes:**
+- `viewModelScope` — all ViewModel-launched coroutines
+- `lifecycleScope` — Activity UI collection only
+- Repositories expose `suspend fun` only — never launch coroutines internally
+
+**Error handling flow (single path — no raw exceptions crossing layer boundaries):**
+```
+SpeechRecognizer callback → ViewModel → ExpenseRepository
+  (returns WriteResult) → ViewModel updates CaptureState
+  → Activity collects and shows toast
+```
+All Sheets API exceptions are caught inside `ExpenseRepository` and mapped to `WriteResult`. Nothing escapes as a raw exception.
+
+**UI state rules:**
+- `CaptureState.Listening` → animated mic indicator
+- `CaptureState.Processing` → spinner (mic animation stops)
+- `CaptureState.Done(Success)` → green toast, finish Activity
+- `CaptureState.Done(Error)` → red toast with retry option, stay open
+
+### Enforcement Guidelines
+
+**All agents MUST:**
+- Use `WriteResult` and `CaptureState` exactly as defined — no new result types
+- Format date/time with the exact pattern strings above
+- Read spreadsheet ID from `PrefsKeys.PREF_SPREADSHEET_ID` — never hardcode
+- Launch coroutines from ViewModel (`viewModelScope`) or Activity (`lifecycleScope`) only
+- Catch all Sheets API exceptions inside `ExpenseRepository` only
+
+**Anti-patterns to avoid:**
+- `SimpleDateFormat` — use `java.time` only
+- Inline SharedPreferences key strings — always use `PrefsKeys`
+- Throwing exceptions from `ExpenseRepository` — map to `WriteResult`
+- Network calls from Activity or ViewModel — only via Repository
