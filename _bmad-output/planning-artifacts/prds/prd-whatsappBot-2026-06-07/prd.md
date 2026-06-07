@@ -78,19 +78,19 @@ Total time: ~4 seconds. Zero typing.
 - **FR-3.3** Date and time are captured from the device clock at the moment the recording stops.
 - **FR-3.4** If no numeric amount can be extracted, the entry is rejected and the user is shown an error with the option to re-record. [ASSUMPTION: a re-record prompt is sufficient; no manual fallback text input needed.]
 
-### FR-4 — OneDrive Excel Integration
+### FR-4 — Google Sheets Integration
 
-- **FR-4.1** The user can configure the target Excel file path (filename and OneDrive folder) from the settings screen. The default on first run is `Expenses.xlsx` in the OneDrive root. A file picker or manual path entry is provided.
-- **FR-4.2** Each calendar month has its own sheet, named `MMM YYYY` (e.g., `Jun 2026`). If the sheet does not exist, the app creates it automatically with a header row.
-- **FR-4.3** Each row in the sheet contains four columns in this order: `Date` (DD/MM/YYYY) | `Time` (HH:MM) | `Amount` (numeric, no currency symbol) | `Subject` (text).
-- **FR-4.4** New rows are appended at the end of the sheet — no sorting, no overwriting.
+- **FR-4.1** The app writes to a user-specified Google Spreadsheet. The target spreadsheet URL/ID is configurable from the settings screen. Default on first run points to the user's designated expense spreadsheet.
+- **FR-4.2** Each calendar month has its own sheet (tab), named `MMM YYYY` (e.g., `Jun 2026`). If the tab does not exist, the app creates it automatically with a header row.
+- **FR-4.3** Each row contains four columns in this order: `Date` (DD/MM/YYYY) | `Time` (HH:MM) | `Amount` (numeric, no currency symbol) | `Subject` (text).
+- **FR-4.4** New rows are appended at the end of the active month's tab — no sorting, no overwriting.
 - **FR-4.5** A visible success notification (Android toast or snackbar) is shown after the row is written. If the write fails, an error notification is shown with a retry option. [ASSUMPTION: on retry failure, entry is silently dropped — no offline queue in v1.]
 
 ### FR-5 — Authentication
 
-- **FR-5.1** The user signs in with a Microsoft account (personal or work) via MSAL on first launch.
+- **FR-5.1** The user signs in with a Google account via Google Sign-In (OAuth 2.0) on first launch. Required scope: `https://www.googleapis.com/auth/spreadsheets`.
 - **FR-5.2** The auth token is persisted; the user is not prompted to sign in again unless the token expires or is revoked.
-- **FR-5.3** A settings screen (reachable from the app, not the widget) allows the user to: sign out and sign in with a different account; configure the target Excel file path (FR-4.1).
+- **FR-5.3** A settings screen (reachable from the app, not the widget) allows the user to: sign out and sign in with a different account; configure the target Google Spreadsheet ID (FR-4.1).
 
 ---
 
@@ -99,11 +99,11 @@ Total time: ~4 seconds. Zero typing.
 | Concern | Requirement |
 |---------|-------------|
 | **Speed** | Tap → confirmed write ≤ 5 s on a standard LTE connection |
-| **Reliability** | On network failure or connectivity loss at any point in the flow, display a clear error notification and offer retry; do not silently lose entries. If the app terminates after STT completes but before the OneDrive write succeeds, this is an acknowledged v1 data-loss risk (no persistent queue). |
+| **Reliability** | On network failure or connectivity loss at any point in the flow, display a clear error notification and offer retry; do not silently lose entries. If the app terminates after STT completes but before the Sheets write succeeds, this is an acknowledged v1 data-loss risk (no persistent queue). |
 | **Privacy** | Voice audio is processed via Android's built-in STT; raw audio is never stored or transmitted to a third-party server |
-| **Permissions** | Request only: `RECORD_AUDIO`, `INTERNET`. No location, contacts, or storage beyond OneDrive API calls |
+| **Permissions** | Request only: `RECORD_AUDIO`, `INTERNET`. No location, contacts, or storage beyond Google Sheets API calls |
 | **Platform** | Android 8.0 (API 26) and above |
-| **Offline** | Not supported in v1 — requires network for OneDrive write |
+| **Offline** | Not supported in v1 — requires network for Google Sheets write |
 
 ---
 
@@ -115,7 +115,7 @@ Total time: ~4 seconds. Zero typing.
 - Budget limits or alerts
 - Charts or summaries within the app
 - iOS version
-- Sharing or export beyond OneDrive
+- Sharing or export beyond Google Sheets
 - WhatsApp integration
 
 ---
