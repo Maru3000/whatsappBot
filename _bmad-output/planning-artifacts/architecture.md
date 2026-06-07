@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5]
+stepsCompleted: [1, 2, 3, 4, 5, 6]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-whatsappBot-2026-06-07/prd.md
 notes: 'Storage: Google Sheets API v4. Auth: Google Sign-In OAuth 2.0. Target spreadsheet ID: 1RErU26Ln2-uW4FMxezn_OZ5WWkvXVvYU. MSAL/OneDrive stack dropped.'
@@ -244,3 +244,102 @@ All Sheets API exceptions are caught inside `ExpenseRepository` and mapped to `W
 - Inline SharedPreferences key strings — always use `PrefsKeys`
 - Throwing exceptions from `ExpenseRepository` — map to `WriteResult`
 - Network calls from Activity or ViewModel — only via Repository
+
+## Project Structure & Boundaries
+
+### Complete Project Directory Structure
+
+```
+android/
+├── gradle/
+│   ├── libs.versions.toml                    ← version catalog (updated in story 1)
+│   └── wrapper/gradle-wrapper.properties
+├── app/
+│   ├── build.gradle.kts                      ← dependency declarations
+│   ├── proguard-rules.pro
+│   └── src/
+│       ├── main/
+│       │   ├── AndroidManifest.xml           ← widget receiver, activities, permissions
+│       │   ├── java/com/maru/expenserecorder/
+│       │   │   ├── widget/
+│       │   │   │   └── ExpenseWidget.kt      ← AppWidgetProvider (FR-1)
+│       │   │   ├── ui/
+│       │   │   │   ├── capture/
+│       │   │   │   │   ├── VoiceCaptureActivity.kt   ← dialog-theme, mic flow (FR-2)
+│       │   │   │   │   ├── VoiceCaptureViewModel.kt  ← StateFlow<CaptureState>
+│       │   │   │   │   └── CaptureState.kt           ← sealed class (canonical)
+│       │   │   │   └── settings/
+│       │   │   │       └── SettingsActivity.kt       ← sign-out + spreadsheet ID (FR-5)
+│       │   │   ├── data/
+│       │   │   │   ├── Expense.kt                    ← data class (FR-3)
+│       │   │   │   ├── WriteResult.kt                ← sealed class (canonical)
+│       │   │   │   └── ExpenseRepository.kt          ← Sheets API writes (FR-4)
+│       │   │   ├── auth/
+│       │   │   │   └── GoogleAuthManager.kt          ← Google Sign-In, token refresh (FR-5)
+│       │   │   └── parser/
+│       │   │       └── ExpenseParser.kt              ← first-number rule (FR-3)
+│       │   └── res/
+│       │       ├── layout/
+│       │       │   ├── activity_voice_capture.xml
+│       │       │   └── activity_settings.xml
+│       │       ├── xml/
+│       │       │   └── expense_widget_info.xml       ← AppWidgetProviderInfo
+│       │       ├── drawable/
+│       │       │   └── ic_expense_widget.xml
+│       │       └── values/
+│       │           ├── strings.xml
+│       │           └── themes.xml                    ← includes dialog theme for capture
+│       └── test/
+│           └── java/com/maru/expenserecorder/
+│               └── parser/
+│                   └── ExpenseParserTest.kt          ← unit tests for FR-3
+├── build.gradle.kts
+├── settings.gradle.kts
+└── gradle.properties
+```
+
+### Architectural Boundaries
+
+**Widget boundary:** `ExpenseWidget` has zero imports from `data/` or `auth/`. It only fires an explicit `Intent` targeting `VoiceCaptureActivity`. No logic.
+
+**Auth boundary:** `GoogleAuthManager` is the single point of contact for Google identity. Both `VoiceCaptureActivity` (permission check on start) and `ExpenseRepository` (token for API calls) depend on it — nothing else does.
+
+**Data boundary:** `ExpenseRepository` is the only file that imports Google Sheets API classes. All callers receive `WriteResult` — they never see API types.
+
+**Parser boundary:** `ExpenseParser` has no Android imports — pure Kotlin. Takes a `String`, returns `Expense?` (null if no number found). Fully unit-testable.
+
+### Requirements to Structure Mapping
+
+| FR Group | Primary Files |
+|----------|--------------|
+| FR-1 — Widget | `widget/ExpenseWidget.kt`, `res/xml/expense_widget_info.xml`, `AndroidManifest.xml` |
+| FR-2 — Voice Capture | `ui/capture/VoiceCaptureActivity.kt`, `VoiceCaptureViewModel.kt` |
+| FR-3 — Parsing | `parser/ExpenseParser.kt`, `data/Expense.kt` |
+| FR-4 — Sheets Integration | `data/ExpenseRepository.kt`, `data/WriteResult.kt` |
+| FR-5 — Auth & Settings | `auth/GoogleAuthManager.kt`, `ui/settings/SettingsActivity.kt` |
+
+### Data Flow
+
+```
+Widget tap
+  → Intent → VoiceCaptureActivity.onCreate()
+    → check RECORD_AUDIO permission
+    → start SpeechRecognizer
+      → onResults(transcript)
+        → VoiceCaptureViewModel.onTranscription(transcript)
+          → ExpenseParser.parse(transcript) → Expense?
+          → ExpenseRepository.appendExpense(expense)
+            → GoogleAuthManager.getToken()
+            → Sheets API v4 append row
+            → WriteResult
+          → CaptureState.Done(result)
+        → Activity collects state → toast → finish()
+```
+
+### External Integrations
+
+| Service | Entry Point | Scope |
+|---------|-------------|-------|
+| Google Sign-In SDK | `GoogleAuthManager` | `spreadsheets` OAuth scope |
+| Google Sheets API v4 | `ExpenseRepository` | Append rows to monthly tab |
+| Android SpeechRecognizer | `VoiceCaptureActivity` | On-device STT, no extra API key |
