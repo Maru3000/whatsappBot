@@ -1,5 +1,8 @@
 ---
-stepsCompleted: [1, 2, 3, 4, 5, 6]
+stepsCompleted: [1, 2, 3, 4, 5, 6, 7, 8]
+lastStep: 8
+status: complete
+completedAt: '2026-06-07'
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-whatsappBot-2026-06-07/prd.md
 notes: 'Storage: Google Sheets API v4. Auth: Google Sign-In OAuth 2.0. Target spreadsheet ID: 1RErU26Ln2-uW4FMxezn_OZ5WWkvXVvYU. MSAL/OneDrive stack dropped.'
@@ -343,3 +346,84 @@ Widget tap
 | Google Sign-In SDK | `GoogleAuthManager` | `spreadsheets` OAuth scope |
 | Google Sheets API v4 | `ExpenseRepository` | Append rows to monthly tab |
 | Android SpeechRecognizer | `VoiceCaptureActivity` | On-device STT, no extra API key |
+
+## Architecture Validation Results
+
+### Coherence Validation ✅
+
+All technology choices are mutually compatible. MVVM + StateFlow + `viewModelScope` is idiomatic Kotlin Android; Google Sign-In + Sheets API v4 use the same Google Play Services foundation; no version conflicts detected. Package-by-feature structure aligns with component boundaries.
+
+### Requirements Coverage Validation ✅
+
+All 18 FRs and all 6 NFRs are architecturally supported. Every FR group maps to a specific file or component. No functional requirement is left without a designated owner in the project structure.
+
+| FR Group | Status |
+|----------|--------|
+| FR-1 Widget | ✅ `ExpenseWidget`, `expense_widget_info.xml`, manifest |
+| FR-2 Voice Capture | ✅ `VoiceCaptureActivity`, `VoiceCaptureViewModel` |
+| FR-3 Parsing | ✅ `ExpenseParser`, `Expense.kt`, ViewModel null-check |
+| FR-4 Sheets Integration | ✅ `ExpenseRepository`, `WriteResult`, `SettingsActivity` |
+| FR-5 Auth & Settings | ✅ `GoogleAuthManager`, `SettingsActivity`, SharedPreferences |
+| All NFRs | ✅ Speed (dialog theme), Privacy (on-device STT), Reliability (WriteResult+toast) |
+
+### Gap Analysis
+
+**Minor (non-blocking):**
+- `AndroidManifest.xml` intent-filter and receiver declarations not fully specified — implementable by convention, covered in story 1.
+- `expense_widget_info.xml` dimensions not specified — standard 1×1 defaults apply.
+- `PrefsKeys` object not formally stubbed — covered by naming pattern rule.
+
+No critical gaps.
+
+### Architecture Completeness Checklist
+
+**Requirements Analysis**
+- [x] Project context thoroughly analyzed
+- [x] Scale and complexity assessed (Low — single-user utility)
+- [x] Technical constraints identified (MSAL removal, Play Services dependency)
+- [x] Cross-cutting concerns mapped (auth refresh, network, permissions, cold-start)
+
+**Architectural Decisions**
+- [x] Critical decisions documented (dialog theme, SharedPreferences, WriteResult)
+- [x] Technology stack fully specified (Kotlin 1.9.23, AGP 8.3.2, Google Sign-In, Sheets API v4)
+- [x] Integration patterns defined (Repository-only network, transparent auth refresh)
+- [x] Performance considerations addressed (dialog theme for <1s cold-start, ≤5s NFR)
+
+**Implementation Patterns**
+- [x] Naming conventions established (PascalCase, camelCase, snake_case resources)
+- [x] Structure patterns defined (package-by-feature, PrefsKeys)
+- [x] Communication patterns specified (StateFlow, Intent-only widget)
+- [x] Process patterns documented (WriteResult, error flow, coroutine scopes)
+
+**Project Structure**
+- [x] Complete directory structure defined (all files named and mapped)
+- [x] Component boundaries established (widget/ui/data/auth/parser)
+- [x] Integration points mapped (data flow diagram)
+- [x] Requirements to structure mapping complete
+
+### Architecture Readiness Assessment
+
+**Overall Status:** READY FOR IMPLEMENTATION
+**Confidence Level:** High
+
+**Key Strengths:**
+- Minimal surface area — 7 Kotlin files cover the entire product
+- No local DB, no sync complexity, no backend to maintain
+- `ExpenseParser` is pure Kotlin — trivially testable without Android
+- Clear single-file ownership per concern; no ambiguity for AI agents
+
+**Areas for Future Enhancement:**
+- Offline queue (SQLite → retry on reconnect) — v2 candidate
+- In-app entry viewer — v2 candidate
+- Play Store release pipeline
+
+### Implementation Handoff
+
+**First Implementation Priority:** Dependency migration — remove MSAL/Room/OkHttp from `libs.versions.toml` and `build.gradle.kts`, add Google Sign-In + Sheets API v4 libraries, verify clean build.
+
+**AI Agent Guidelines:**
+- Follow all architectural decisions exactly as documented
+- Use `WriteResult` and `CaptureState` canonical definitions — never redefine
+- All network access through `ExpenseRepository` only
+- Date/time via `java.time` with the exact format strings in the patterns section
+- Refer to this document for all architectural questions
