@@ -2,7 +2,7 @@
 title: 'Story 1 — Migrate from OneDrive/MSAL/Room to Google Sheets/Google Sign-In'
 type: 'refactor'
 created: '2026-06-07'
-status: 'in-review'
+status: 'done'
 baseline_commit: '6db15e58286132e0ca9f98f08e03bcda328d8db8'
 context:
   - '_bmad-output/planning-artifacts/architecture.md'
@@ -133,3 +133,54 @@ lifecycleScope.launch {
 
 **Commands:**
 - `cd android && ./gradlew assembleDebug` -- expected: BUILD SUCCESSFUL, zero compilation errors, no references to msal/room/okhttp/ksp
+
+## Suggested Review Order
+
+**Core: Google Sheets write path**
+
+- Entry point — full append flow: check tab, create if missing, write row
+  [`ExpenseRepository.kt:20`](../../android/app/src/main/java/com/maru/expenserecorder/data/ExpenseRepository.kt#L20)
+
+- Tab auto-create with null-safe `.sheets` and concurrent 400 handled gracefully
+  [`ExpenseRepository.kt:63`](../../android/app/src/main/java/com/maru/expenserecorder/data/ExpenseRepository.kt#L63)
+
+- Row append — column order: Date | Time | Amount | Subject
+  [`ExpenseRepository.kt:88`](../../android/app/src/main/java/com/maru/expenserecorder/data/ExpenseRepository.kt#L88)
+
+**Auth layer**
+
+- `buildCredential` — `GoogleAccountCredential` from last signed-in account; returns null if not signed in
+  [`GoogleAuthManager.kt:26`](../../android/app/src/main/java/com/maru/expenserecorder/auth/GoogleAuthManager.kt#L26)
+
+**Recording flow**
+
+- STT result → parse → Expense construction (java.time, no SimpleDateFormat)
+  [`RecordingActivity.kt:102`](../../android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt#L102)
+
+- Credential check + `lifecycleScope` coroutine → WriteResult dispatch
+  [`RecordingActivity.kt:124`](../../android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt#L124)
+
+- Retry dialog guarded against destroyed-activity crash
+  [`RecordingActivity.kt:157`](../../android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt#L157)
+
+- Old recognizer destroyed before re-record to prevent RECOGNIZER_BUSY crash
+  [`RecordingActivity.kt:48`](../../android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt#L48)
+
+**Settings UI**
+
+- Sign-in/sign-out flow via `ActivityResultLauncher`
+  [`MainActivity.kt:20`](../../android/app/src/main/java/com/maru/expenserecorder/MainActivity.kt#L20)
+
+- Spreadsheet ID saved to SharedPreferences via `PrefsKeys.prefs()`
+  [`MainActivity.kt:44`](../../android/app/src/main/java/com/maru/expenserecorder/MainActivity.kt#L44)
+
+**Domain types & config**
+
+- `WriteResult` sealed class — four cases: Success, NetworkError, AuthError, SheetsError
+  [`WriteResult.kt:4`](../../android/app/src/main/java/com/maru/expenserecorder/data/WriteResult.kt#L4)
+
+- `Expense` data class — no Room annotations
+  [`Expense.kt:4`](../../android/app/src/main/java/com/maru/expenserecorder/data/Expense.kt#L4)
+
+- Google deps added, ksp/msal/okhttp/room removed
+  [`libs.versions.toml:1`](../../android/gradle/libs.versions.toml#L1)
