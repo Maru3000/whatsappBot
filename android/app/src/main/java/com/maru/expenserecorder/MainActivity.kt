@@ -1,107 +1,78 @@
 package com.maru.expenserecorder
 
+import android.app.Activity
 import android.os.Bundle
-import android.view.View
-import androidx.appcompat.app.AlertDialog
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.LinearLayoutManager
-import com.maru.expenserecorder.database.ExpenseDatabase
+import com.google.android.gms.auth.api.signin.GoogleSignIn
+import com.google.android.gms.common.api.ApiException
+import com.maru.expenserecorder.data.PrefsKeys
 import com.maru.expenserecorder.databinding.ActivityMainBinding
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
-    private val adapter = ExpenseAdapter()
-    private val db by lazy { ExpenseDatabase.get(this) }
     private val auth get() = (application as ExpenseApp).authManager
+
+    private val signInLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            try {
+                GoogleSignIn.getSignedInAccountFromIntent(result.data)
+                    .getResult(ApiException::class.java)
+                refreshSignInStatus()
+            } catch (e: ApiException) {
+                Toast.makeText(this, "Sign-in failed (${e.statusCode})", Toast.LENGTH_SHORT).show()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
-        binding.recyclerExpenses.layoutManager = LinearLayoutManager(this)
-        binding.recyclerExpenses.adapter = adapter
+        val prefs = PrefsKeys.prefs(this)
+        binding.etSpreadsheetId.setText(
+            prefs.getString(PrefsKeys.PREF_SPREADSHEET_ID, PrefsKeys.DEFAULT_SPREADSHEET_ID)
+        )
 
-        binding.btnClear.setOnClickListener {
-            AlertDialog.Builder(this)
-                .setTitle("Clear all expenses?")
-                .setMessage("This only clears the local log. The OneDrive file is not deleted.")
-                .setPositiveButton("Clear") { _, _ ->
-                    lifecycleScope.launch(Dispatchers.IO) { db.expenseDao().deleteAll() }
+        binding.btnSignIn.setOnClickListener {
+            if (auth.isSignedIn()) {
+                lifecycleScope.launch {
+                    auth.signOut()
+                    refreshSignInStatus()
                 }
-                .setNegativeButton("Cancel", null)
-                .show()
-        }
-
-        binding.btnOnedrive.setOnClickListener { onOneDriveButtonClick() }
-
-        // Observe expense list
-        lifecycleScope.launch {
-            db.expenseDao().getAllFlow().collectLatest { expenses ->
-                adapter.submitList(expenses)
-                val total = expenses.sumOf { it.amount }
-                binding.tvTotal.text = getString(R.string.total_label, total)
-                binding.recyclerExpenses.visibility = if (expenses.isEmpty()) View.GONE else View.VISIBLE
-                binding.tvEmpty.visibility = if (expenses.isEmpty()) View.VISIBLE else View.GONE
-            }
-        }
-
-        // Initialize MSAL and refresh sign-in status
-        lifecycleScope.launch {
-            auth.initialize()
-            refreshOneDriveStatus()
-        }
-    }
-
-    private suspend fun refreshOneDriveStatus() {
-        val name = auth.getCurrentUserName()
-        if (name != null) {
-            binding.btnOnedrive.text = "OneDrive: $name"
-            syncUnsyncedExpenses()
-        } else {
-            binding.btnOnedrive.text = getString(R.string.connect_onedrive)
-        }
-    }
-
-    private fun onOneDriveButtonClick() {
-        lifecycleScope.launch {
-            val name = auth.getCurrentUserName()
-            if (name != null) {
-                // Already signed in — offer sign-out
-                AlertDialog.Builder(this@MainActivity)
-                    .setTitle("OneDrive")
-                    .setMessage("Signed in as $name\n\nSign out?")
-                    .setPositiveButton("Sign out") { _, _ ->
-                        lifecycleScope.launch {
-                            auth.signOut()
-                            binding.btnOnedrive.text = getString(R.string.connect_onedrive)
-                        }
-                    }
-                    .setNegativeButton("Cancel", null)
-                    .show()
             } else {
-                binding.btnOnedrive.text = "Connecting…"
-                val token = auth.signIn(this@MainActivity)
-                if (token != null) {
-                    refreshOneDriveStatus()
-                } else {
-                    binding.btnOnedrive.text = getString(R.string.connect_onedrive)
-                }
+                signInLauncher.launch(auth.signInClient.signInIntent)
             }
         }
+
+        binding.btnSaveId.setOnClickListener {
+            val id = binding.etSpreadsheetId.text.toString().trim()
+            if (id.isBlank()) {
+                Toast.makeText(this, getString(R.string.spreadsheet_id_empty), Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            PrefsKeys.prefs(this).edit().putString(PrefsKeys.PREF_SPREADSHEET_ID, id).apply()
+            Toast.makeText(this, getString(R.string.saved_settings), Toast.LENGTH_SHORT).show()
+        }
+
+        refreshSignInStatus()
     }
 
-    private fun syncUnsyncedExpenses() {
-        lifecycleScope.launch(Dispatchers.IO) {
-            runCatching {
-                val token = auth.getTokenSilently() ?: return@launch
-                OneDriveSync(applicationContext).syncUnsynced(token)
-            }
+    private fun refreshSignInStatus() {
+        val email = auth.getAccountEmail()
+        if (email != null) {
+            binding.tvAccount.text = email
+            binding.btnSignIn.text = getString(R.string.sign_out)
+        } else {
+            binding.tvAccount.text = getString(R.string.not_signed_in)
+            binding.btnSignIn.text = getString(R.string.sign_in_google)
         }
     }
 }

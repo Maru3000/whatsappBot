@@ -2,7 +2,8 @@
 title: 'Story 1 — Migrate from OneDrive/MSAL/Room to Google Sheets/Google Sign-In'
 type: 'refactor'
 created: '2026-06-07'
-status: 'draft'
+status: 'in-review'
+baseline_commit: '6db15e58286132e0ca9f98f08e03bcda328d8db8'
 context:
   - '_bmad-output/planning-artifacts/architecture.md'
 ---
@@ -71,24 +72,24 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `android/gradle/libs.versions.toml` -- REMOVE versions: `ksp`, `msal`, `okhttp`, `room`; ADD: `play-services-auth = "21.2.0"`, `google-sheets = "v4-rev20240422-2.0.0"`, `google-api-client-android = "2.6.0"`, `google-http-client-jackson2 = "1.44.2"`; ADD library aliases: `play-services-auth`, `google-api-services-sheets`, `google-api-client-android`, `google-http-client-jackson2`
-- [ ] `android/app/build.gradle.kts` -- REMOVE: `alias(libs.plugins.ksp)` plugin; REMOVE: room deps, ksp() call, msal dep, okhttp dep, `configurations.all { resolutionStrategy.force(...) }`, MSAL packaging exclusions; ADD: `implementation(libs.play.services.auth)`, `implementation(libs.google.api.services.sheets)`, `implementation(libs.google.api.client.android)`, `implementation(libs.google.http.client.jackson2)`; KEEP: packaging block but with only `META-INF/DEPENDENCIES` exclusion needed for Google API client
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/auth/MicrosoftAuthManager.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/OneDriveSync.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/MinimalXlsx.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/database/Expense.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/database/ExpenseDao.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/database/ExpenseDatabase.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/ExpenseAdapter.kt` -- DELETE file
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/auth/GoogleAuthManager.kt` -- CREATE: Google Sign-In wrapper; `fun signIn(activity, launcher)`, `suspend fun getAccessToken(activity): String?`, `fun signOut(context)`, `fun isSignedIn(): Boolean`
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/data/WriteResult.kt` -- CREATE sealed class
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/data/Expense.kt` -- CREATE data class (date: String DD/MM/YYYY, time: String HH:mm, amount: Double, subject: String)
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/data/ExpenseRepository.kt` -- CREATE with `suspend fun appendExpense(expense: Expense, accessToken: String, spreadsheetId: String): WriteResult`
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/ExpenseApp.kt` -- REFACTOR: swap auth manager
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt` -- REFACTOR: remove DB/OneDrive code; add Sheets write via repository
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/MainActivity.kt` -- REFACTOR: remove RecyclerView/Room; show sign-in status + settings navigation
-- [ ] `android/app/src/main/java/com/maru/expenserecorder/ExpenseWidget.kt` -- ADAPT: verify intent target class name
-- [ ] `android/app/src/main/AndroidManifest.xml` -- UPDATE: remove MSAL entries, add GMS version metadata
+- [x] `android/gradle/libs.versions.toml` -- REMOVE versions: `ksp`, `msal`, `okhttp`, `room`; ADD: `play-services-auth = "21.2.0"`, `google-sheets = "v4-rev20240422-2.0.0"`, `google-api-client-android = "2.6.0"`, `google-http-client-jackson2 = "1.44.2"`; ADD library aliases: `play-services-auth`, `google-api-services-sheets`, `google-api-client-android`, `google-http-client-jackson2`
+- [x] `android/app/build.gradle.kts` -- REMOVE: `alias(libs.plugins.ksp)` plugin; REMOVE: room deps, ksp() call, msal dep, okhttp dep, `configurations.all { resolutionStrategy.force(...) }`, MSAL packaging exclusions; ADD: `implementation(libs.play.services.auth)`, `implementation(libs.google.api.services.sheets)`, `implementation(libs.google.api.client.android)`, `implementation(libs.google.http.client.jackson2)`; KEEP: packaging block but with only `META-INF/DEPENDENCIES` exclusion needed for Google API client
+- [x] `android/app/src/main/java/com/maru/expenserecorder/auth/MicrosoftAuthManager.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/OneDriveSync.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/MinimalXlsx.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/database/Expense.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/database/ExpenseDao.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/database/ExpenseDatabase.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/ExpenseAdapter.kt` -- DELETE file
+- [x] `android/app/src/main/java/com/maru/expenserecorder/auth/GoogleAuthManager.kt` -- CREATE: Google Sign-In wrapper; `fun signIn(activity, launcher)`, `suspend fun getAccessToken(activity): String?`, `fun signOut(context)`, `fun isSignedIn(): Boolean`
+- [x] `android/app/src/main/java/com/maru/expenserecorder/data/WriteResult.kt` -- CREATE sealed class
+- [x] `android/app/src/main/java/com/maru/expenserecorder/data/Expense.kt` -- CREATE data class (date: String DD/MM/YYYY, time: String HH:mm, amount: Double, subject: String)
+- [x] `android/app/src/main/java/com/maru/expenserecorder/data/ExpenseRepository.kt` -- CREATE with `suspend fun appendExpense(expense: Expense, credential: GoogleAccountCredential, spreadsheetId: String): WriteResult`
+- [x] `android/app/src/main/java/com/maru/expenserecorder/ExpenseApp.kt` -- REFACTOR: swap auth manager
+- [x] `android/app/src/main/java/com/maru/expenserecorder/RecordingActivity.kt` -- REFACTOR: remove DB/OneDrive code; add Sheets write via repository
+- [x] `android/app/src/main/java/com/maru/expenserecorder/MainActivity.kt` -- REFACTOR: remove RecyclerView/Room; show sign-in status + settings navigation
+- [x] `android/app/src/main/java/com/maru/expenserecorder/ExpenseWidget.kt` -- ADAPT: verify intent target class name (already correct — no change needed)
+- [x] `android/app/src/main/AndroidManifest.xml` -- UPDATE: remove MSAL entries, add GMS version metadata
 
 **Acceptance Criteria:**
 - Given the project is opened in Android Studio, when Gradle sync runs, then it succeeds with no unresolved references to `msal`, `okhttp`, `room`, or `ksp`.

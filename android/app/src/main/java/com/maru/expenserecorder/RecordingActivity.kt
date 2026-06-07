@@ -10,22 +10,25 @@ import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.maru.expenserecorder.database.Expense
-import com.maru.expenserecorder.database.ExpenseDatabase
+import androidx.lifecycle.lifecycleScope
+import com.maru.expenserecorder.data.Expense
+import com.maru.expenserecorder.data.ExpenseRepository
+import com.maru.expenserecorder.data.PrefsKeys
+import com.maru.expenserecorder.data.WriteResult
 import com.maru.expenserecorder.databinding.ActivityRecordingBinding
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 class RecordingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRecordingBinding
     private var speechRecognizer: SpeechRecognizer? = null
-    private val scope = CoroutineScope(Dispatchers.Main)
-    private val db by lazy { ExpenseDatabase.get(applicationContext) }
+    private val repository = ExpenseRepository()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,38 +101,65 @@ class RecordingActivity : AppCompatActivity() {
     private fun processExpense(text: String) {
         val parsed = ExpenseParser.parse(text)
         if (parsed == null) {
-            Toast.makeText(this, getString(R.string.could_not_parse), Toast.LENGTH_LONG).show()
+            AlertDialog.Builder(this)
+                .setTitle(getString(R.string.could_not_parse_title))
+                .setMessage(getString(R.string.could_not_parse_msg))
+                .setPositiveButton(getString(R.string.re_record)) { _, _ -> startListening() }
+                .setNegativeButton(getString(R.string.cancel)) { _, _ -> finish() }
+                .show()
+            return
+        }
+
+        val now = LocalDateTime.now()
+        val expense = Expense(
+            date = now.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+            time = now.format(DateTimeFormatter.ofPattern("HH:mm")),
+            amount = parsed.amount,
+            subject = parsed.description
+        )
+        writeExpense(expense)
+    }
+
+    private fun writeExpense(expense: Expense) {
+        val credential = (application as ExpenseApp).authManager.buildCredential()
+        if (credential == null) {
+            Toast.makeText(this, getString(R.string.not_signed_in_record), Toast.LENGTH_LONG).show()
             finish()
             return
         }
 
-        scope.launch {
-            val expense = Expense(amount = parsed.amount, description = parsed.description)
-            val savedId = db.expenseDao().insert(expense)
-            val savedExpense = expense.copy(id = savedId)
+        val spreadsheetId = PrefsKeys.prefs(this)
+            .getString(PrefsKeys.PREF_SPREADSHEET_ID, PrefsKeys.DEFAULT_SPREADSHEET_ID)!!
 
-            Toast.makeText(
-                this@RecordingActivity,
-                getString(R.string.saved, parsed.amount, parsed.description),
-                Toast.LENGTH_LONG
-            ).show()
+        binding.tvStatus.text = "Saving…"
 
-            // Fire-and-forget OneDrive sync — won't block or crash if offline/not signed in
-            syncToOneDrive(savedExpense)
-
-            Handler(Looper.getMainLooper()).postDelayed({ finish() }, 1200)
+        lifecycleScope.launch {
+            when (val result = repository.appendExpense(expense, credential, spreadsheetId)) {
+                is WriteResult.Success -> {
+                    Toast.makeText(
+                        this@RecordingActivity,
+                        getString(R.string.saved, expense.amount, expense.subject),
+                        Toast.LENGTH_LONG
+                    ).show()
+                    Handler(Looper.getMainLooper()).postDelayed({ finish() }, 1200)
+                }
+                is WriteResult.NetworkError -> showRetryDialog(expense, result.msg)
+                is WriteResult.AuthError -> {
+                    Toast.makeText(this@RecordingActivity, getString(R.string.auth_error_record), Toast.LENGTH_LONG).show()
+                    finish()
+                }
+                is WriteResult.SheetsError -> showRetryDialog(expense, result.msg)
+            }
         }
     }
 
-    private fun syncToOneDrive(expense: Expense) {
-        scope.launch(Dispatchers.IO) {
-            runCatching {
-                val token = (application as ExpenseApp).authManager.getTokenSilently()
-                    ?: return@launch
-                val success = OneDriveSync(applicationContext).syncExpense(token, expense)
-                if (success) db.expenseDao().markSynced(expense.id)
-            }
-        }
+    private fun showRetryDialog(expense: Expense, errorMsg: String) {
+        AlertDialog.Builder(this)
+            .setTitle(getString(R.string.save_failed))
+            .setMessage(errorMsg)
+            .setPositiveButton(getString(R.string.retry)) { _, _ -> writeExpense(expense) }
+            .setNegativeButton(getString(R.string.cancel)) { _, _ -> finish() }
+            .show()
     }
 
     override fun onRequestPermissionsResult(

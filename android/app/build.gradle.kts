@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.ksp)
 }
 
 android {
@@ -35,19 +34,9 @@ android {
     buildFeatures {
         viewBinding = true
     }
-    // MSAL ships with duplicate classes from older support libraries
-    configurations.all {
-        resolutionStrategy.force("androidx.core:core:1.13.1")
-    }
     packaging {
         resources.excludes += setOf(
-            "META-INF/DEPENDENCIES",
-            "META-INF/LICENSE",
-            "META-INF/LICENSE.txt",
-            "META-INF/license.txt",
-            "META-INF/NOTICE",
-            "META-INF/NOTICE.txt",
-            "META-INF/notice.txt"
+            "META-INF/DEPENDENCIES"
         )
     }
 }
@@ -56,11 +45,10 @@ dependencies {
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.appcompat)
     implementation(libs.material)
-    implementation(libs.androidx.room.runtime)
-    implementation(libs.androidx.room.ktx)
-    ksp(libs.androidx.room.compiler)
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
-    implementation(libs.msal)
-    implementation(libs.okhttp)
+    implementation(libs.play.services.auth)
+    implementation(libs.google.api.services.sheets)
+    implementation(libs.google.api.client.android)
+    implementation(libs.google.http.client.jackson2)
 }

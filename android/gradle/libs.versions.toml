@@ -1,29 +1,27 @@
 [versions]
 agp = "8.3.2"
 kotlin = "1.9.23"
-ksp = "1.9.23-1.0.20"
 coreKtx = "1.13.1"
 appcompat = "1.7.0"
 material = "1.12.0"
-room = "2.6.1"
 lifecycleRuntime = "2.8.3"
 coroutines = "1.8.1"
-msal = "5.3.0"
-okhttp = "4.12.0"
+playServicesAuth = "21.2.0"
+googleSheets = "v4-rev20240422-2.0.0"
+googleApiClientAndroid = "2.6.0"
+googleHttpClientJackson2 = "1.44.2"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
-androidx-room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
-androidx-room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
-androidx-room-compiler = { group = "androidx.room", name = "room-compiler", version.ref = "room" }
 lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntime" }
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutines" }
-msal = { group = "com.microsoft.identity.client", name = "msal", version.ref = "msal" }
-okhttp = { group = "com.squareup.okhttp3", name = "okhttp", version.ref = "okhttp" }
+play-services-auth = { group = "com.google.android.gms", name = "play-services-auth", version.ref = "playServicesAuth" }
+google-api-services-sheets = { group = "com.google.apis", name = "google-api-services-sheets", version.ref = "googleSheets" }
+google-api-client-android = { group = "com.google.api-client", name = "google-api-client-android", version.ref = "googleApiClientAndroid" }
+google-http-client-jackson2 = { group = "com.google.http-client", name = "google-http-client-jackson2", version.ref = "googleHttpClientJackson2" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
