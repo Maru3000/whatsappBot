@@ -1,5 +1,5 @@
 ---
-stepsCompleted: [1, 2]
+stepsCompleted: [1, 2, 3]
 inputDocuments:
   - _bmad-output/planning-artifacts/prds/prd-whatsappBot-2026-06-07/prd.md
 notes: 'Storage: Google Sheets API v4. Auth: Google Sign-In OAuth 2.0. Target spreadsheet ID: 1RErU26Ln2-uW4FMxezn_OZ5WWkvXVvYU. MSAL/OneDrive stack dropped.'
@@ -42,3 +42,41 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 2. **Network state** — check connectivity before attempting Sheets write; surface clear error if offline.
 3. **Widget cold-start lifecycle** — `VoiceCaptureActivity` must initialise and open mic in <1s from a dead process.
 4. **Runtime permission** — `RECORD_AUDIO` must be requested gracefully; widget tap with permission denied must show a clear prompt, not crash.
+
+## Starter Template Evaluation
+
+### Primary Technology Domain
+
+Native Android — existing Kotlin/Gradle scaffold reused. No new project initialisation needed.
+
+### Foundation Decision: Adapt Existing Scaffold
+
+The existing scaffold (AGP 8.3.2 / Kotlin 1.9.23 / ViewBinding) is retained as-is.
+
+**Dependency Changes:**
+
+| Action | Library |
+|--------|---------|
+| Remove | `msal:5.3.0` |
+| Remove | `okhttp:4.12.0` |
+| Remove | `room-runtime`, `room-ktx`, `room-compiler`, `ksp` plugin |
+| Add | `play-services-auth:21.2.0` — Google Sign-In OAuth 2.0 |
+| Add | `google-api-services-sheets:v4-rev20240422-2.0.0` — Sheets API v4 |
+| Add | `google-api-client-android:2.6.0` — Android HTTP transport |
+| Add | `google-http-client-jackson2:1.44.2` — JSON serialisation |
+
+### Architectural Pattern: MVVM (manual DI)
+
+| Component | Role |
+|-----------|------|
+| `ExpenseWidget` | `AppWidgetProvider` — handles widget tap, fires `VoiceCaptureActivity` |
+| `VoiceCaptureActivity` | Owns mic lifecycle, drives the full capture flow |
+| `SettingsActivity` | Sign-out + spreadsheet ID configuration |
+| `ExpenseRepository` | Single source of truth for Google Sheets writes |
+| `GoogleAuthManager` | Google Sign-In token acquisition and transparent refresh |
+| `ExpenseParser` | Pure Kotlin — first-number parse rule, no dependencies |
+
+**Language & Runtime:** Kotlin, JVM 17, coroutines for all async operations
+**Build Tooling:** Gradle Kotlin DSL, `libs.versions.toml` version catalog
+**Testing:** Unit tests for `ExpenseParser`; no UI test suite in v1
+**Note:** Dependency migration is the first implementation story.
