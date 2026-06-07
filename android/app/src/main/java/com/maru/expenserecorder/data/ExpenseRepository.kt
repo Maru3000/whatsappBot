@@ -62,14 +62,19 @@ class ExpenseRepository {
 
     private fun ensureTabExists(service: Sheets, spreadsheetId: String, tabName: String) {
         val spreadsheet = service.spreadsheets().get(spreadsheetId).execute()
-        val exists = spreadsheet.sheets.any { it.properties.title == tabName }
+        val exists = spreadsheet.sheets?.any { it.properties?.title == tabName } == true
         if (!exists) {
-            val addSheet = AddSheetRequest().setProperties(SheetProperties().setTitle(tabName))
-            service.spreadsheets().batchUpdate(
-                spreadsheetId,
-                BatchUpdateSpreadsheetRequest().setRequests(listOf(Request().setAddSheet(addSheet)))
-            ).execute()
-            // Write header row
+            try {
+                val addSheet = AddSheetRequest().setProperties(SheetProperties().setTitle(tabName))
+                service.spreadsheets().batchUpdate(
+                    spreadsheetId,
+                    BatchUpdateSpreadsheetRequest().setRequests(listOf(Request().setAddSheet(addSheet)))
+                ).execute()
+            } catch (e: com.google.api.client.googleapis.json.GoogleJsonResponseException) {
+                // 400 "already exists" from a concurrent write — treat as success and continue
+                if (e.statusCode != 400) throw e
+            }
+            // Write header row (idempotent: if row 1 is already written, this overwrites with the same values)
             val header = ValueRange().setValues(
                 listOf(listOf("Date", "Time", "Amount", "Subject"))
             )

@@ -52,6 +52,7 @@ class RecordingActivity : AppCompatActivity() {
             return
         }
 
+        speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
             setRecognitionListener(object : RecognitionListener {
                 override fun onReadyForSpeech(p: Bundle?) {
@@ -154,6 +155,7 @@ class RecordingActivity : AppCompatActivity() {
     }
 
     private fun showRetryDialog(expense: Expense, errorMsg: String) {
+        if (isFinishing || isDestroyed) return
         AlertDialog.Builder(this)
             .setTitle(getString(R.string.save_failed))
             .setMessage(errorMsg)
