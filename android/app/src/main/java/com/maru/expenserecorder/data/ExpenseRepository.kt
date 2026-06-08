@@ -49,7 +49,7 @@ class ExpenseRepository {
         }
     }
 
-    private fun buildTabName(date: String): String {
+    internal fun buildTabName(date: String): String {
         // date is DD/MM/YYYY — parse month + year for tab name "Jun 2026"
         val parts = date.split("/")
         val month = parts[1].toInt()

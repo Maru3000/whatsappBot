@@ -57,4 +57,6 @@ dependencies {
     implementation(libs.google.api.services.sheets)
     implementation(libs.google.api.client.android)
     implementation(libs.google.http.client.jackson2)
+    testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlin:kotlin-test-junit:1.9.23")
 }

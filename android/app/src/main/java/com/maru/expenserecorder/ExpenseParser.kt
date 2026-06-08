@@ -39,19 +39,24 @@ object ExpenseParser {
             // Skip shekel keywords
             if (token in shekelWords) { i++; continue }
 
-            // Try digit parse (handles "50", "50.5", "50,5")
+            // Try digit parse (handles "50", "50.5", "50,5") — first-number rule
             val numericVal = token.replace(',', '.').toDoubleOrNull()
             if (numericVal != null) {
-                amount = numericVal
+                if (amount == null) amount = numericVal else descriptionTokens.add(token)
                 i++
                 continue
             }
 
-            // Try word-number parse
+            // Try word-number parse — first-number rule
             val wordVal = resolveWordNumber(tokens, i)
             if (wordVal != null) {
-                amount = wordVal.first.toDouble()
-                i += wordVal.second
+                if (amount == null) {
+                    amount = wordVal.first.toDouble()
+                    i += wordVal.second
+                } else {
+                    descriptionTokens.add(token)
+                    i++
+                }
                 continue
             }
 
