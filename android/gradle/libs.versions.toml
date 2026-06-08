@@ -7,7 +7,7 @@ material = "1.12.0"
 lifecycleRuntime = "2.8.3"
 coroutines = "1.8.1"
 playServicesAuth = "21.2.0"
-googleSheets = "v4-rev20240422-2.0.0"
+googleSheets = "v4-rev20260213-2.0.0"
 googleApiClientAndroid = "2.6.0"
 googleHttpClientJackson2 = "1.44.2"
 
