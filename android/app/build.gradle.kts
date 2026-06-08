@@ -8,7 +8,7 @@ android {
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.maru.expenserecorder"
+        applicationId = "com.maru.cashlog"
         minSdk = 26
         targetSdk = 34
         versionCode = 1
