@@ -27,7 +27,7 @@ object ExpenseParser {
 
     fun parse(input: String): ParsedExpense? {
         val text = input.trim().lowercase()
-        val tokens = text.split(Regex("\\s+|[,]"))
+        val tokens = text.split(Regex("\\s+"))
 
         var amount: Double? = null
         val descriptionTokens = mutableListOf<String>()
