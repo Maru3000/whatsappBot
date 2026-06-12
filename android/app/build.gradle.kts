@@ -42,7 +42,8 @@ android {
             "META-INF/license.txt",
             "META-INF/NOTICE",
             "META-INF/NOTICE.txt",
-            "META-INF/notice.txt"
+            "META-INF/notice.txt",
+            "META-INF/INDEX.LIST"
         )
     }
 }
