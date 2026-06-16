@@ -49,7 +49,7 @@ object ExpenseParser {
 
             // Skip shekel keywords and income markers (stripped, not added to description)
             if (token in shekelWords) { i++; continue }
-            if (token in incomeWords) { isIncome = true; i++; continue }
+            if (incomeWords.any { token.contains(it) }) { isIncome = true; i++; continue }
 
             // Try digit parse (handles "50", "50.5", "50,5") — first-number rule
             val numericVal = token.replace(',', '.').toDoubleOrNull()
