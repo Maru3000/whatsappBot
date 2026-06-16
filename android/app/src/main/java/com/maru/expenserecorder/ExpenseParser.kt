@@ -2,7 +2,7 @@ package com.maru.expenserecorder
 
 object ExpenseParser {
 
-    data class ParsedExpense(val amount: Double, val description: String)
+    data class ParsedExpense(val amount: Double, val description: String, val type: String = "expense")
 
     private val numberWords = mapOf(
         "zero" to 0, "one" to 1, "two" to 2, "three" to 3, "four" to 4,
@@ -25,19 +25,26 @@ object ExpenseParser {
         "shekel", "shekels", "nis", "ils", "shek", "שקל", "שקלים", "₪"
     )
 
+    private val incomeWords = setOf(
+        "income", "received", "salary", "payment", "earned", "wages", "revenue",
+        "hakhnasa", "miskoret", "tashlum", "kibel"
+    )
+
     fun parse(input: String): ParsedExpense? {
         val text = input.trim().lowercase()
         val tokens = text.split(Regex("\\s+"))
 
         var amount: Double? = null
         val descriptionTokens = mutableListOf<String>()
+        var isIncome = false
         var i = 0
 
         while (i < tokens.size) {
             val token = tokens[i]
 
-            // Skip shekel keywords
+            // Skip shekel keywords and income markers (stripped, not added to description)
             if (token in shekelWords) { i++; continue }
+            if (token in incomeWords) { isIncome = true; i++; continue }
 
             // Try digit parse (handles "50", "50.5", "50,5") — first-number rule
             val numericVal = token.replace(',', '.').toDoubleOrNull()
@@ -74,7 +81,7 @@ object ExpenseParser {
             .replaceFirstChar { it.uppercase() }
             .ifBlank { "Cash expense" }
 
-        return ParsedExpense(finalAmount, description)
+        return ParsedExpense(finalAmount, description, if (isIncome) "income" else "expense")
     }
 
     // Returns (value, tokensConsumed) or null

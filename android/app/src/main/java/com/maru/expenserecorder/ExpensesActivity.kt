@@ -1,5 +1,6 @@
 package com.maru.expenserecorder
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -66,10 +67,15 @@ class ExpensesActivity : AppCompatActivity() {
                 binding.rvExpenses.visibility = View.VISIBLE
                 binding.rvExpenses.adapter = ExpenseListAdapter(expenses)
             }
-            val total = expenses.sumOf { it.amount }
-            val totalStr = if (total % 1.0 == 0.0) total.toLong().toString()
-                           else "%.2f".format(total)
-            binding.tvTotal.text = "₪$totalStr"
+            val income = expenses.filter { it.type == "income" }.sumOf { it.amount }
+            val spent  = expenses.filter { it.type != "income" }.sumOf { it.amount }
+            val net = income - spent
+            val netStr = if (net % 1.0 == 0.0) net.toLong().toString() else "%.2f".format(net)
+            val prefix = if (net >= 0) "+" else ""
+            binding.tvTotal.text = "$prefix₪$netStr"
+            binding.tvTotal.setTextColor(
+                if (net >= 0) Color.parseColor("#4CAF50") else Color.parseColor("#F44336")
+            )
         }
     }
 

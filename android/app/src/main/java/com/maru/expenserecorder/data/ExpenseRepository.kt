@@ -72,7 +72,8 @@ class ExpenseRepository {
                 date = row[0].toString(),
                 time = row[1].toString(),
                 amount = row[2].toString().toDoubleOrNull() ?: return@mapNotNull null,
-                subject = row[3].toString()
+                subject = row[3].toString(),
+                type = if (row.size >= 5) row[4].toString() else "expense"
             ) else null
         }
     }
@@ -104,7 +105,7 @@ class ExpenseRepository {
             }
             // Write header row (idempotent: if row 1 is already written, this overwrites with the same values)
             val header = ValueRange().setValues(
-                listOf(listOf("Date", "Time", "Amount", "Subject"))
+                listOf(listOf("Date", "Time", "Amount", "Subject", "Type"))
             )
             service.spreadsheets().values()
                 .update(spreadsheetId, "$tabName!A1", header)
@@ -115,10 +116,10 @@ class ExpenseRepository {
 
     private fun appendRow(service: Sheets, spreadsheetId: String, tabName: String, expense: Expense) {
         val row = ValueRange().setValues(
-            listOf(listOf(expense.date, expense.time, expense.amount, expense.subject))
+            listOf(listOf(expense.date, expense.time, expense.amount, expense.subject, expense.type))
         )
         service.spreadsheets().values()
-            .append(spreadsheetId, "$tabName!A:D", row)
+            .append(spreadsheetId, "$tabName!A:E", row)
             .setValueInputOption("RAW")
             .setInsertDataOption("INSERT_ROWS")
             .execute()

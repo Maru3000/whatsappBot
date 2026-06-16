@@ -1,5 +1,6 @@
 package com.maru.expenserecorder
 
+import android.graphics.Color
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.RecyclerView
@@ -20,7 +21,10 @@ class ExpenseListAdapter(private val items: List<Expense>) :
         holder.binding.tvDatetime.text = "${e.date}  ${e.time}"
         val amountStr = if (e.amount % 1.0 == 0.0) e.amount.toLong().toString()
                         else "%.2f".format(e.amount)
-        holder.binding.tvAmount.text = "₪$amountStr"
+        val isIncome = e.type == "income"
+        holder.binding.tvAmount.text = if (isIncome) "+₪$amountStr" else "-₪$amountStr"
+        val color = if (isIncome) Color.parseColor("#4CAF50") else Color.parseColor("#F44336")
+        holder.binding.tvAmount.setTextColor(color)
     }
 
     override fun getItemCount() = items.size

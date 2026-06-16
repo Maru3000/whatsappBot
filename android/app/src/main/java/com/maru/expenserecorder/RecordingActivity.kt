@@ -95,6 +95,8 @@ class RecordingActivity : AppCompatActivity() {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, "he-IL,en-US")
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
         }
         speechRecognizer?.startListening(intent)
     }
@@ -116,7 +118,8 @@ class RecordingActivity : AppCompatActivity() {
             date = now.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
             time = now.format(DateTimeFormatter.ofPattern("HH:mm")),
             amount = parsed.amount,
-            subject = parsed.description
+            subject = parsed.description,
+            type = parsed.type
         )
         writeExpense(expense)
     }
