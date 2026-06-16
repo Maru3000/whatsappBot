@@ -102,9 +102,6 @@ class ExpensesActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val expenses = repository.getExpenses(credential, spreadsheetId, tabName)
-            val incomeCount = expenses.count { it.type == "income" }
-            Toast.makeText(this@ExpensesActivity,
-                "Tab: $tabName | ${expenses.size} rows ($incomeCount income)", Toast.LENGTH_LONG).show()
             binding.progressBar.visibility = View.GONE
             if (expenses.isEmpty()) {
                 binding.tvEmpty.visibility = View.VISIBLE
@@ -113,14 +110,9 @@ class ExpensesActivity : AppCompatActivity() {
                 binding.rvExpenses.adapter = ExpenseListAdapter(expenses)
             }
             val income = expenses.filter { it.type == "income" }.sumOf { it.amount }
-            val spent  = expenses.filter { it.type != "income" }.sumOf { it.amount }
-            val net = income - spent
-            val netStr = if (net % 1.0 == 0.0) net.toLong().toString() else "%.2f".format(net)
-            val prefix = if (net >= 0) "+" else ""
-            binding.tvTotal.text = "$prefix₪$netStr"
-            binding.tvTotal.setTextColor(
-                if (net >= 0) Color.parseColor("#4CAF50") else Color.parseColor("#F44336")
-            )
+            val incomeStr = if (income % 1.0 == 0.0) income.toLong().toString() else "%.2f".format(income)
+            binding.tvTotal.text = "+₪$incomeStr"
+            binding.tvTotal.setTextColor(Color.parseColor("#4CAF50"))
         }
     }
 
