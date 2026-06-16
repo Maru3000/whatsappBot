@@ -49,6 +49,34 @@ class ExpenseRepository {
         }
     }
 
+    suspend fun getExpenses(
+        credential: GoogleAccountCredential,
+        spreadsheetId: String,
+        tabName: String
+    ): List<Expense> = withContext(Dispatchers.IO) {
+        val service = Sheets.Builder(
+            NetHttpTransport(), JacksonFactory.getDefaultInstance(), credential
+        ).setApplicationName("ExpenseRecorder").build()
+
+        val rows = try {
+            service.spreadsheets().values()
+                .get(spreadsheetId, "$tabName!A:D")
+                .execute()
+                .getValues()
+        } catch (e: com.google.api.client.googleapis.json.GoogleJsonResponseException) {
+            null // tab doesn't exist yet
+        } ?: return@withContext emptyList<Expense>()
+
+        rows.drop(1).mapNotNull { row ->
+            if (row.size >= 4) Expense(
+                date = row[0].toString(),
+                time = row[1].toString(),
+                amount = row[2].toString().toDoubleOrNull() ?: return@mapNotNull null,
+                subject = row[3].toString()
+            ) else null
+        }
+    }
+
     internal fun buildTabName(date: String): String {
         // date is DD/MM/YYYY — parse month + year for tab name "Jun 2026"
         val parts = date.split("/")

@@ -23,4 +23,8 @@
     <string name="spreadsheet_id_empty">Spreadsheet ID cannot be empty</string>
     <string name="save">Save</string>
     <string name="saved_settings">Settings saved</string>
+    <string name="view_expenses">View Expenses</string>
+    <string name="total">Total</string>
+    <string name="refresh">Refresh</string>
+    <string name="no_expenses">No expenses recorded this month</string>
 </resources>

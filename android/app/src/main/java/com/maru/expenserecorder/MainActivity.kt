@@ -1,6 +1,7 @@
 package com.maru.expenserecorder
 
 import android.app.Activity
+import android.content.Intent
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
@@ -60,6 +61,10 @@ class MainActivity : AppCompatActivity() {
             }
             PrefsKeys.prefs(this).edit().putString(PrefsKeys.PREF_SPREADSHEET_ID, id).apply()
             Toast.makeText(this, getString(R.string.saved_settings), Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnViewExpenses.setOnClickListener {
+            startActivity(Intent(this, ExpensesActivity::class.java))
         }
 
         refreshSignInStatus()

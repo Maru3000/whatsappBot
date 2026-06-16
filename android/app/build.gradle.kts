@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.lifecycle.runtime.ktx)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.play.services.auth)
+    implementation(libs.androidx.recyclerview)
     implementation(libs.google.api.services.sheets)
     implementation(libs.google.api.client.android)
     implementation(libs.google.http.client.jackson2)
