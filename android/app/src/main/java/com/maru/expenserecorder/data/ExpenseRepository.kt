@@ -73,7 +73,7 @@ class ExpenseRepository {
                 time = row[1].toString(),
                 amount = row[2].toString().toDoubleOrNull() ?: return@mapNotNull null,
                 subject = row[3].toString(),
-                type = if (row.size >= 5) row[4].toString() else "expense"
+                type = if (row.size >= 5) row[4].toString().trim().lowercase() else "expense"
             ) else null
         }
     }
@@ -116,7 +116,7 @@ class ExpenseRepository {
 
     private fun appendRow(service: Sheets, spreadsheetId: String, tabName: String, expense: Expense) {
         val row = ValueRange().setValues(
-            listOf(listOf(expense.date, expense.time, expense.amount, expense.subject, expense.type))
+            listOf(listOf(expense.date, expense.time, expense.amount, expense.subject, expense.type.trim().lowercase()))
         )
         service.spreadsheets().values()
             .append(spreadsheetId, "$tabName!A:E", row)
