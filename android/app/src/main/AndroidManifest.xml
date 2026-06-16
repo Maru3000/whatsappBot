@@ -33,6 +33,7 @@
             android:exported="false"
             android:theme="@style/Theme.Transparent"
             android:launchMode="singleTop"
+            android:taskAffinity=""
             android:excludeFromRecents="true" />
 
         <!-- Home screen widget -->
