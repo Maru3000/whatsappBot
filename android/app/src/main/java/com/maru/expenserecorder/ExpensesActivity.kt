@@ -5,15 +5,19 @@ import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
 import android.widget.Toast
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.maru.expenserecorder.data.Expense
 import com.maru.expenserecorder.data.ExpenseRepository
 import com.maru.expenserecorder.data.PrefsKeys
 import com.maru.expenserecorder.databinding.ActivityExpensesBinding
+import com.maru.expenserecorder.databinding.DialogAddExpenseBinding
 import kotlinx.coroutines.launch
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 class ExpensesActivity : AppCompatActivity() {
@@ -41,7 +45,45 @@ class ExpensesActivity : AppCompatActivity() {
         )
 
         binding.btnRefresh.setOnClickListener { loadExpenses() }
+        binding.fabAdd.setOnClickListener { showAddDialog() }
         loadExpenses()
+    }
+
+    private fun showAddDialog() {
+        val dialogBinding = DialogAddExpenseBinding.inflate(layoutInflater)
+        AlertDialog.Builder(this)
+            .setTitle("Add Entry")
+            .setView(dialogBinding.root)
+            .setPositiveButton("Save") { _, _ ->
+                val amount = dialogBinding.etAmount.text.toString().trim().toDoubleOrNull()
+                val description = dialogBinding.etDescription.text.toString().trim()
+                if (amount == null || description.isBlank()) {
+                    Toast.makeText(this, "Enter a valid amount and description", Toast.LENGTH_SHORT).show()
+                    return@setPositiveButton
+                }
+                val type = if (dialogBinding.rbIncome.isChecked) "income" else "expense"
+                val now = LocalDateTime.now()
+                val expense = Expense(
+                    date = now.format(DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    time = now.format(DateTimeFormatter.ofPattern("HH:mm")),
+                    amount = amount,
+                    subject = description,
+                    type = type
+                )
+                saveEntry(expense)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    private fun saveEntry(expense: Expense) {
+        val credential = auth.buildCredential() ?: return
+        val spreadsheetId = PrefsKeys.prefs(this)
+            .getString(PrefsKeys.PREF_SPREADSHEET_ID, PrefsKeys.DEFAULT_SPREADSHEET_ID)!!
+        lifecycleScope.launch {
+            repository.appendExpense(expense, credential, spreadsheetId)
+            loadExpenses()
+        }
     }
 
     private fun loadExpenses() {
