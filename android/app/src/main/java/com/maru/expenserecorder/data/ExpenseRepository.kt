@@ -60,7 +60,7 @@ class ExpenseRepository {
 
         val rows = try {
             service.spreadsheets().values()
-                .get(spreadsheetId, "$tabName!A:D")
+                .get(spreadsheetId, "$tabName!A:E")
                 .execute()
                 .getValues()
         } catch (e: com.google.api.client.googleapis.json.GoogleJsonResponseException) {
