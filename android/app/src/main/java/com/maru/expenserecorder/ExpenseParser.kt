@@ -26,8 +26,13 @@ object ExpenseParser {
     )
 
     private val incomeWords = setOf(
+        // English
         "income", "received", "salary", "payment", "earned", "wages", "revenue",
-        "hakhnasa", "miskoret", "tashlum", "kibel"
+        // Hebrew transliterations
+        "hakhnasa", "miskoret", "tashlum", "kibel",
+        // Hebrew script
+        "הכנסה", "הכנסות", "משכורת", "תשלום", "קיבלתי", "קיבל",
+        "הרווחתי", "הרוויחתי", "שכר", "רווח", "פרילנס"
     )
 
     fun parse(input: String): ParsedExpense? {
