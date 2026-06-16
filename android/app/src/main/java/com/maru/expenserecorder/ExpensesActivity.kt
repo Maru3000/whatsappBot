@@ -102,6 +102,9 @@ class ExpensesActivity : AppCompatActivity() {
 
         lifecycleScope.launch {
             val expenses = repository.getExpenses(credential, spreadsheetId, tabName)
+            val incomeCount = expenses.count { it.type == "income" }
+            Toast.makeText(this@ExpensesActivity,
+                "Tab: $tabName | ${expenses.size} rows ($incomeCount income)", Toast.LENGTH_LONG).show()
             binding.progressBar.visibility = View.GONE
             if (expenses.isEmpty()) {
                 binding.tvEmpty.visibility = View.VISIBLE
