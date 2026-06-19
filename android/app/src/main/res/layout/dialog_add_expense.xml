@@ -34,7 +34,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Expense"
+            android:text="Cash Expense"
             android:textColor="#F44336"
             android:checked="true" />
 
@@ -43,7 +43,7 @@
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="Income"
+            android:text="Work Income"
             android:textColor="#4CAF50" />
 
     </RadioGroup>

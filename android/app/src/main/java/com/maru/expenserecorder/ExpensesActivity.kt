@@ -1,6 +1,5 @@
 package com.maru.expenserecorder
 
-import android.graphics.Color
 import android.os.Bundle
 import android.view.MenuItem
 import android.view.View
@@ -39,10 +38,10 @@ class ExpensesActivity : AppCompatActivity() {
         )
         supportActionBar?.title = tabName
 
+        binding.rvIncome.layoutManager = LinearLayoutManager(this)
         binding.rvExpenses.layoutManager = LinearLayoutManager(this)
-        binding.rvExpenses.addItemDecoration(
-            DividerItemDecoration(this, DividerItemDecoration.VERTICAL)
-        )
+        binding.rvIncome.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
+        binding.rvExpenses.addItemDecoration(DividerItemDecoration(this, DividerItemDecoration.VERTICAL))
 
         binding.btnRefresh.setOnClickListener { loadExpenses() }
         binding.fabAdd.setOnClickListener { showAddDialog() }
@@ -97,24 +96,45 @@ class ExpensesActivity : AppCompatActivity() {
             .getString(PrefsKeys.PREF_SPREADSHEET_ID, PrefsKeys.DEFAULT_SPREADSHEET_ID)!!
 
         binding.progressBar.visibility = View.VISIBLE
-        binding.rvExpenses.visibility = View.GONE
+        binding.sectionIncome.visibility = View.GONE
+        binding.sectionExpenses.visibility = View.GONE
+        binding.sectionDivider.visibility = View.GONE
         binding.tvEmpty.visibility = View.GONE
 
         lifecycleScope.launch {
-            val expenses = repository.getExpenses(credential, spreadsheetId, tabName)
+            val all = repository.getExpenses(credential, spreadsheetId, tabName)
             binding.progressBar.visibility = View.GONE
-            if (expenses.isEmpty()) {
+
+            val incomeItems  = all.filter { it.type == "income" }
+            val expenseItems = all.filter { it.type != "income" }
+
+            if (incomeItems.isEmpty() && expenseItems.isEmpty()) {
                 binding.tvEmpty.visibility = View.VISIBLE
-            } else {
-                binding.rvExpenses.visibility = View.VISIBLE
-                binding.rvExpenses.adapter = ExpenseListAdapter(expenses)
+                return@launch
             }
-            val income = expenses.filter { it.type == "income" }.sumOf { it.amount }
-            val incomeStr = if (income % 1.0 == 0.0) income.toLong().toString() else "%.2f".format(income)
-            binding.tvTotal.text = "+₪$incomeStr"
-            binding.tvTotal.setTextColor(Color.parseColor("#4CAF50"))
+
+            if (incomeItems.isNotEmpty()) {
+                binding.rvIncome.adapter = ExpenseListAdapter(incomeItems)
+                val total = incomeItems.sumOf { it.amount }
+                binding.tvIncomeTotal.text = "+₪${formatAmount(total)}"
+                binding.sectionIncome.visibility = View.VISIBLE
+            }
+
+            if (expenseItems.isNotEmpty()) {
+                binding.rvExpenses.adapter = ExpenseListAdapter(expenseItems)
+                val total = expenseItems.sumOf { it.amount }
+                binding.tvExpensesTotal.text = "-₪${formatAmount(total)}"
+                binding.sectionExpenses.visibility = View.VISIBLE
+            }
+
+            if (incomeItems.isNotEmpty() && expenseItems.isNotEmpty()) {
+                binding.sectionDivider.visibility = View.VISIBLE
+            }
         }
     }
+
+    private fun formatAmount(v: Double) =
+        if (v % 1.0 == 0.0) v.toLong().toString() else "%.2f".format(v)
 
     override fun onOptionsItemSelected(item: MenuItem): Boolean {
         if (item.itemId == android.R.id.home) { finish(); return true }
