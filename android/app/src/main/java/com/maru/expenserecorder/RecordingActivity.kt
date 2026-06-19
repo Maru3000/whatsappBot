@@ -82,9 +82,14 @@ class RecordingActivity : AppCompatActivity() {
                     processExpense(text)
                 }
                 override fun onPartialResults(partial: Bundle?) {
-                    binding.tvRecognized.text = partial
+                    val text = partial
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull() ?: ""
+                    binding.tvRecognized.text = text
+                    // Stop as soon as we have both an amount and a subject
+                    if (text.isNotBlank() && ExpenseParser.parse(text) != null) {
+                        speechRecognizer?.stopListening()
+                    }
                 }
                 override fun onEvent(t: Int, p: Bundle?) {}
             })
