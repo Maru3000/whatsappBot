@@ -86,9 +86,12 @@ class RecordingActivity : AppCompatActivity() {
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull() ?: ""
                     binding.tvRecognized.text = text
-                    // Stop as soon as we have both an amount and a subject
-                    if (text.isNotBlank() && ExpenseParser.parse(text) != null) {
-                        speechRecognizer?.stopListening()
+                    // Stop only when we have both an amount AND a real subject (not the default fallback)
+                    if (text.isNotBlank()) {
+                        val parsed = ExpenseParser.parse(text)
+                        if (parsed != null && parsed.description != "Cash expense") {
+                            speechRecognizer?.stopListening()
+                        }
                     }
                 }
                 override fun onEvent(t: Int, p: Bundle?) {}
