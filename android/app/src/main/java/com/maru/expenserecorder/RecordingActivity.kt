@@ -98,9 +98,15 @@ class RecordingActivity : AppCompatActivity() {
             })
         }
 
+        val savedLangs = PrefsKeys.prefs(this)
+            .getString(PrefsKeys.PREF_SPEECH_LANGUAGES, PrefsKeys.DEFAULT_SPEECH_LANGUAGES)!!
+        val primaryLang = savedLangs.split(",").first().trim()
+
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, "he-IL,en-US")
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE, savedLangs)
+            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, primaryLang)
+            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)

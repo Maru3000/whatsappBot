@@ -84,6 +84,40 @@
         android:backgroundTint="#4CAF50"
         android:textColor="#FFFFFF" />
 
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Speech Language"
+        android:textColor="#888888"
+        android:textSize="12sp"
+        android:textAllCaps="true"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="32dp" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Up to 2 languages can be active simultaneously"
+        android:textColor="#666666"
+        android:textSize="12sp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="2dp" />
+
+    <Button
+        android:id="@+id/btn_language_picker"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginTop="8dp"
+        android:backgroundTint="#2C2C2C"
+        android:textColor="#FFFFFF"
+        android:gravity="start|center_vertical"
+        android:paddingStart="12dp"
+        android:text="Hebrew, English" />
+
     <Button
         android:id="@+id/btn_view_expenses"
         android:layout_width="match_parent"
