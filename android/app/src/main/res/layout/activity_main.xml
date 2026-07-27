@@ -91,6 +91,55 @@
             android:backgroundTint="#4CAF50"
             android:textColor="#FFFFFF" />
 
+        <!-- Deepgram API Key -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Deepgram API Key"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textAllCaps="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="32dp" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Get a free key at deepgram.com"
+            android:textColor="#666666"
+            android:textSize="12sp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="2dp" />
+
+        <EditText
+            android:id="@+id/et_deepgram_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#666666"
+            android:hint="Paste API key here"
+            android:inputType="textPassword"
+            android:background="#2C2C2C"
+            android:padding="12dp"
+            android:fontFamily="monospace"
+            android:textSize="13sp" />
+
+        <Button
+            android:id="@+id/btn_save_deepgram_key"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:text="Save API Key"
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFFFFF" />
+
         <!-- Speech Language -->
         <TextView
             android:layout_width="match_parent"

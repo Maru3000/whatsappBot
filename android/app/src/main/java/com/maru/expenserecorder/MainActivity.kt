@@ -62,6 +62,19 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
+        // Deepgram API key
+        val savedKey = prefs.getString(PrefsKeys.PREF_DEEPGRAM_KEY, "")!!
+        if (savedKey.isNotBlank()) binding.etDeepgramKey.setText(savedKey)
+        binding.btnSaveDeepgramKey.setOnClickListener {
+            val key = binding.etDeepgramKey.text.toString().trim()
+            if (key.isBlank()) {
+                Toast.makeText(this, "Key cannot be empty", Toast.LENGTH_SHORT).show()
+                return@setOnClickListener
+            }
+            prefs.edit().putString(PrefsKeys.PREF_DEEPGRAM_KEY, key).apply()
+            Toast.makeText(this, "API key saved", Toast.LENGTH_SHORT).show()
+        }
+
         // Language radio — restore saved value
         val savedLang = prefs.getString(PrefsKeys.PREF_SPEECH_LANGUAGES, PrefsKeys.DEFAULT_SPEECH_LANGUAGES)!!
         when (savedLang) {

@@ -1,14 +1,13 @@
 package com.maru.expenserecorder
 
 import android.Manifest
-import android.content.Intent
 import android.content.pm.PackageManager
+import android.media.AudioFormat
+import android.media.AudioRecord
+import android.media.MediaRecorder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.speech.RecognitionListener
-import android.speech.RecognizerIntent
-import android.speech.SpeechRecognizer
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
@@ -20,16 +19,34 @@ import com.maru.expenserecorder.data.ExpenseRepository
 import com.maru.expenserecorder.data.PrefsKeys
 import com.maru.expenserecorder.data.WriteResult
 import com.maru.expenserecorder.databinding.ActivityRecordingBinding
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.ByteArrayOutputStream
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import kotlin.math.sqrt
 
 class RecordingActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityRecordingBinding
-    private var speechRecognizer: SpeechRecognizer? = null
     private val repository = ExpenseRepository()
+    private var recordingJob: Job? = null
 
+    @Volatile private var audioRecord: AudioRecord? = null
+
+    companion object {
+        private const val REQ_MIC = 101
+        private const val SAMPLE_RATE = 16000
+        private const val SILENCE_THRESHOLD_RMS = 600.0
+        private const val SILENCE_DURATION_MS = 3000L
+        private const val MIN_RECORD_MS = 800L
+        private const val MAX_RECORD_MS = 30_000L
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,83 +59,128 @@ class RecordingActivity : AppCompatActivity() {
         ) {
             ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.RECORD_AUDIO), REQ_MIC)
         } else {
-            startListening()
+            startRecording()
         }
     }
 
-    private fun startListening() {
-        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
-            Toast.makeText(this, "Speech recognition not available", Toast.LENGTH_SHORT).show()
+    private fun startRecording() {
+        val apiKey = PrefsKeys.prefs(this).getString(PrefsKeys.PREF_DEEPGRAM_KEY, "")!!
+        if (apiKey.isBlank()) {
+            Toast.makeText(this, "Add a Deepgram API key in Settings first", Toast.LENGTH_LONG).show()
             finish()
             return
         }
-
-        speechRecognizer?.destroy()
-        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
-            setRecognitionListener(object : RecognitionListener {
-                override fun onReadyForSpeech(p: Bundle?) {
-                    binding.tvStatus.text = getString(R.string.listening)
-                }
-                override fun onBeginningOfSpeech() {}
-                override fun onRmsChanged(rms: Float) {
-                    val s = (1f + rms / 10f).coerceIn(0.8f, 1.4f)
-                    binding.ivMicAnim.scaleX = s
-                    binding.ivMicAnim.scaleY = s
-                }
-                override fun onBufferReceived(b: ByteArray?) {}
-                override fun onEndOfSpeech() { binding.tvStatus.text = "Processing…" }
-                override fun onError(error: Int) {
-                    val msg = when (error) {
-                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT  -> "Network timeout — check connection"
-                        SpeechRecognizer.ERROR_NETWORK          -> "No network — connect to WiFi or mobile data"
-                        SpeechRecognizer.ERROR_AUDIO            -> "Microphone error — try again"
-                        SpeechRecognizer.ERROR_SERVER           -> "Google server error — try again"
-                        SpeechRecognizer.ERROR_CLIENT           -> "Recognition client error ($error)"
-                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT   -> "No speech detected"
-                        SpeechRecognizer.ERROR_NO_MATCH         -> "Didn't catch that — try again"
-                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY  -> "Recognizer busy — wait a moment"
-                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission missing"
-                        11 -> "Too many requests — wait a few seconds" // ERROR_TOO_MANY_REQUESTS
-                        else -> "Recognition error (code $error)"
-                    }
-                    Toast.makeText(this@RecordingActivity, msg, Toast.LENGTH_LONG).show()
-                    finish()
-                }
-                override fun onResults(results: Bundle?) {
-                    val text = results?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull() ?: ""
-                    binding.tvRecognized.text = text
-                    processExpense(text)
-                }
-                override fun onPartialResults(partial: Bundle?) {
-                    val text = partial
-                        ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
-                        ?.firstOrNull() ?: ""
-                    binding.tvRecognized.text = text
-                }
-                override fun onEvent(t: Int, p: Bundle?) {}
-            })
-        }
-
         val savedLangs = PrefsKeys.prefs(this)
             .getString(PrefsKeys.PREF_SPEECH_LANGUAGES, PrefsKeys.DEFAULT_SPEECH_LANGUAGES)!!
-        val langs = savedLangs.split(",").map { it.trim() }
-        val primaryLang = langs.first()
 
-        val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE, savedLangs)
-            putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, primaryLang)
-            // Pass as String array for devices that support the array form of multi-language
-            if (langs.size > 1) {
-                putExtra("android.speech.extra.EXTRA_LANGUAGE_MULTI", langs.toTypedArray())
+        binding.tvStatus.text = getString(R.string.listening)
+        binding.tvRecognized.text = ""
+
+        recordingJob?.cancel()
+        recordingJob = lifecycleScope.launch(Dispatchers.IO) {
+            val bufSize = AudioRecord.getMinBufferSize(
+                SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT
+            ).coerceAtLeast(4096)
+
+            val recorder = AudioRecord(
+                MediaRecorder.AudioSource.MIC,
+                SAMPLE_RATE,
+                AudioFormat.CHANNEL_IN_MONO,
+                AudioFormat.ENCODING_PCM_16BIT,
+                bufSize * 4
+            )
+            audioRecord = recorder
+
+            val pcm = ByteArrayOutputStream()
+            val buf = ShortArray(bufSize / 2)
+            var silenceMs = 0L
+            var recordedMs = 0L
+            var transcript = ""
+
+            try {
+                recorder.startRecording()
+
+                while (isActive) {
+                    val read = recorder.read(buf, 0, buf.size)
+                    if (read <= 0) break
+
+                    val bytes = ByteBuffer.allocate(read * 2).order(ByteOrder.LITTLE_ENDIAN)
+                    bytes.asShortBuffer().put(buf, 0, read)
+                    pcm.write(bytes.array())
+
+                    val chunkMs = read * 1000L / SAMPLE_RATE
+
+                    var sum = 0.0
+                    for (i in 0 until read) { val v = buf[i].toDouble(); sum += v * v }
+                    val rms = sqrt(sum / read)
+
+                    val scale = (1f + (rms / 8000.0).toFloat()).coerceIn(0.8f, 1.5f)
+                    withContext(Dispatchers.Main) {
+                        binding.ivMicAnim.scaleX = scale
+                        binding.ivMicAnim.scaleY = scale
+                    }
+
+                    recordedMs += chunkMs
+                    if (recordedMs >= MIN_RECORD_MS) {
+                        if (rms < SILENCE_THRESHOLD_RMS) {
+                            silenceMs += chunkMs
+                            if (silenceMs >= SILENCE_DURATION_MS) break
+                        } else {
+                            silenceMs = 0
+                        }
+                    }
+                    if (recordedMs >= MAX_RECORD_MS) break
+                }
+
+                if (!isActive) return@launch
+
+                withContext(Dispatchers.Main) { binding.tvStatus.text = "Transcribing…" }
+
+                val wavBytes = buildWav(pcm.toByteArray())
+                transcript = DeepgramClient.transcribe(apiKey, savedLangs, wavBytes)
+
+            } catch (e: Exception) {
+                if (!isActive) return@launch
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(
+                        this@RecordingActivity,
+                        "Transcription failed: ${e.message}",
+                        Toast.LENGTH_LONG
+                    ).show()
+                    finish()
+                }
+                return@launch
+            } finally {
+                try { recorder.stop() } catch (_: Exception) {}
+                try { recorder.release() } catch (_: Exception) {}
+                audioRecord = null
             }
-            putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
-            putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+
+            withContext(Dispatchers.Main) {
+                binding.tvRecognized.text = transcript
+                processExpense(transcript)
+            }
         }
-        speechRecognizer?.startListening(intent)
+    }
+
+    private fun buildWav(pcm: ByteArray): ByteArray {
+        val wav = ByteArray(44 + pcm.size)
+        val bb = ByteBuffer.wrap(wav).order(ByteOrder.LITTLE_ENDIAN)
+        bb.put("RIFF".toByteArray())
+        bb.putInt(36 + pcm.size)
+        bb.put("WAVE".toByteArray())
+        bb.put("fmt ".toByteArray())
+        bb.putInt(16)
+        bb.putShort(1)                   // PCM
+        bb.putShort(1)                   // mono
+        bb.putInt(SAMPLE_RATE)
+        bb.putInt(SAMPLE_RATE * 2)       // byte rate
+        bb.putShort(2)                   // block align
+        bb.putShort(16)                  // bits per sample
+        bb.put("data".toByteArray())
+        bb.putInt(pcm.size)
+        bb.put(pcm)
+        return wav
     }
 
     private fun processExpense(text: String) {
@@ -127,7 +189,7 @@ class RecordingActivity : AppCompatActivity() {
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.could_not_parse_title))
                 .setMessage("Heard: \"$text\"\n\n${getString(R.string.could_not_parse_msg)}")
-                .setPositiveButton(getString(R.string.re_record)) { _, _ -> startListening() }
+                .setPositiveButton(getString(R.string.re_record)) { _, _ -> startRecording() }
                 .setNegativeButton(getString(R.string.cancel)) { _, _ -> finish() }
                 .show()
             return
@@ -192,7 +254,7 @@ class RecordingActivity : AppCompatActivity() {
     ) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         if (requestCode == REQ_MIC && grantResults.firstOrNull() == PackageManager.PERMISSION_GRANTED) {
-            startListening()
+            startRecording()
         } else {
             Toast.makeText(this, getString(R.string.permission_needed), Toast.LENGTH_SHORT).show()
             finish()
@@ -200,11 +262,11 @@ class RecordingActivity : AppCompatActivity() {
     }
 
     override fun onDestroy() {
-        speechRecognizer?.destroy()
+        recordingJob?.cancel()
+        val rec = audioRecord
+        audioRecord = null
+        try { rec?.stop() } catch (_: Exception) {}
+        try { rec?.release() } catch (_: Exception) {}
         super.onDestroy()
-    }
-
-    companion object {
-        private const val REQ_MIC = 101
     }
 }

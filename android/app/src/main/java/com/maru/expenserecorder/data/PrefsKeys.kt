@@ -10,6 +10,8 @@ object PrefsKeys {
     const val PREF_SPEECH_LANGUAGES = "pref_speech_languages"
     const val DEFAULT_SPEECH_LANGUAGES = "he-IL,en-US"
 
+    const val PREF_DEEPGRAM_KEY = "pref_deepgram_key"
+
     fun prefs(context: Context): SharedPreferences =
         context.getSharedPreferences("expense_recorder_prefs", Context.MODE_PRIVATE)
 }
