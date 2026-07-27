@@ -6,7 +6,6 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -31,9 +30,6 @@ class RecordingActivity : AppCompatActivity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val repository = ExpenseRepository()
 
-    // Auto-stop state
-    private var listenStartTime = 0L
-    private var lastValidPartial = ""
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,9 +52,6 @@ class RecordingActivity : AppCompatActivity() {
             finish()
             return
         }
-
-        listenStartTime = SystemClock.elapsedRealtime()
-        lastValidPartial = ""
 
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
@@ -94,22 +87,6 @@ class RecordingActivity : AppCompatActivity() {
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull() ?: ""
                     binding.tvRecognized.text = text
-
-                    // Only consider stopping after 1.5s minimum (prevents cutting off mid-sentence)
-                    val elapsed = SystemClock.elapsedRealtime() - listenStartTime
-                    if (elapsed < 1500L || text.isBlank()) return
-
-                    val parsed = ExpenseParser.parse(text)
-                    if (parsed != null && parsed.description != "Cash expense") {
-                        // Require 2 consecutive valid partials before stopping (debounce)
-                        if (lastValidPartial.isNotBlank()) {
-                            speechRecognizer?.stopListening()
-                        } else {
-                            lastValidPartial = text
-                        }
-                    } else {
-                        lastValidPartial = ""
-                    }
                 }
                 override fun onEvent(t: Int, p: Bundle?) {}
             })
@@ -130,8 +107,8 @@ class RecordingActivity : AppCompatActivity() {
             }
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3000L)
         }
         speechRecognizer?.startListening(intent)
     }
