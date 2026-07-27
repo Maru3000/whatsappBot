@@ -69,11 +69,19 @@ class RecordingActivity : AppCompatActivity() {
                 override fun onEndOfSpeech() { binding.tvStatus.text = "Processing…" }
                 override fun onError(error: Int) {
                     val msg = when (error) {
-                        SpeechRecognizer.ERROR_NO_MATCH    -> "Didn't catch that — try again"
-                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
-                        else -> "Recognition error ($error)"
+                        SpeechRecognizer.ERROR_NETWORK_TIMEOUT  -> "Network timeout — check connection"
+                        SpeechRecognizer.ERROR_NETWORK          -> "No network — connect to WiFi or mobile data"
+                        SpeechRecognizer.ERROR_AUDIO            -> "Microphone error — try again"
+                        SpeechRecognizer.ERROR_SERVER           -> "Google server error — try again"
+                        SpeechRecognizer.ERROR_CLIENT           -> "Recognition client error ($error)"
+                        SpeechRecognizer.ERROR_SPEECH_TIMEOUT   -> "No speech detected"
+                        SpeechRecognizer.ERROR_NO_MATCH         -> "Didn't catch that — try again"
+                        SpeechRecognizer.ERROR_RECOGNIZER_BUSY  -> "Recognizer busy — wait a moment"
+                        SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission missing"
+                        11 -> "Too many requests — wait a few seconds" // ERROR_TOO_MANY_REQUESTS
+                        else -> "Recognition error (code $error)"
                     }
-                    Toast.makeText(this@RecordingActivity, msg, Toast.LENGTH_SHORT).show()
+                    Toast.makeText(this@RecordingActivity, msg, Toast.LENGTH_LONG).show()
                     finish()
                 }
                 override fun onResults(results: Bundle?) {
