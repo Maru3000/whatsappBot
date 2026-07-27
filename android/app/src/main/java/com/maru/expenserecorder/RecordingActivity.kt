@@ -126,7 +126,7 @@ class RecordingActivity : AppCompatActivity() {
         if (parsed == null) {
             AlertDialog.Builder(this)
                 .setTitle(getString(R.string.could_not_parse_title))
-                .setMessage(getString(R.string.could_not_parse_msg))
+                .setMessage("Heard: \"$text\"\n\n${getString(R.string.could_not_parse_msg)}")
                 .setPositiveButton(getString(R.string.re_record)) { _, _ -> startListening() }
                 .setNegativeButton(getString(R.string.cancel)) { _, _ -> finish() }
                 .show()
