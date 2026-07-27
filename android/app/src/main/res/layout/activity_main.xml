@@ -1,132 +1,152 @@
 <?xml version="1.0" encoding="utf-8"?>
-<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
     android:background="#121212">
 
-    <TextView
+    <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:text="@string/app_name"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:textColor="#FFFFFF"
-        android:padding="16dp"
-        android:background="#1E1E1E" />
+        android:orientation="vertical"
+        android:paddingBottom="32dp">
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/section_account"
-        android:textColor="#888888"
-        android:textSize="12sp"
-        android:textAllCaps="true"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp" />
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/app_name"
+            android:textSize="20sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:padding="16dp"
+            android:background="#1E1E1E" />
 
-    <TextView
-        android:id="@+id/tv_account"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:textColor="#CCCCCC"
-        android:textSize="14sp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="4dp"
-        android:text="@string/not_signed_in" />
+        <!-- Google Account -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/section_account"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textAllCaps="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="24dp" />
 
-    <Button
-        android:id="@+id/btn_sign_in"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/sign_in_google"
-        android:backgroundTint="#4285F4"
-        android:textColor="#FFFFFF" />
+        <TextView
+            android:id="@+id/tv_account"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textColor="#CCCCCC"
+            android:textSize="14sp"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="4dp"
+            android:text="@string/not_signed_in" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="@string/section_spreadsheet"
-        android:textColor="#888888"
-        android:textSize="12sp"
-        android:textAllCaps="true"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="32dp" />
+        <Button
+            android:id="@+id/btn_sign_in"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/sign_in_google"
+            android:backgroundTint="#4285F4"
+            android:textColor="#FFFFFF" />
 
-    <EditText
-        android:id="@+id/et_spreadsheet_id"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:textColor="#FFFFFF"
-        android:textColorHint="#666666"
-        android:hint="@string/spreadsheet_id_hint"
-        android:inputType="text"
-        android:background="#2C2C2C"
-        android:padding="12dp" />
+        <!-- Spreadsheet ID -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/section_spreadsheet"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textAllCaps="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="32dp" />
 
-    <Button
-        android:id="@+id/btn_save_id"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:text="@string/save"
-        android:backgroundTint="#4CAF50"
-        android:textColor="#FFFFFF" />
+        <EditText
+            android:id="@+id/et_spreadsheet_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:textColor="#FFFFFF"
+            android:textColorHint="#666666"
+            android:hint="@string/spreadsheet_id_hint"
+            android:inputType="text"
+            android:background="#2C2C2C"
+            android:padding="12dp" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Speech Language"
-        android:textColor="#888888"
-        android:textSize="12sp"
-        android:textAllCaps="true"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="32dp" />
+        <Button
+            android:id="@+id/btn_save_id"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp"
+            android:text="@string/save"
+            android:backgroundTint="#4CAF50"
+            android:textColor="#FFFFFF" />
 
-    <TextView
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:text="Up to 2 languages can be active simultaneously"
-        android:textColor="#666666"
-        android:textSize="12sp"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="2dp" />
+        <!-- Speech Language -->
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Speech Language"
+            android:textColor="#888888"
+            android:textSize="12sp"
+            android:textAllCaps="true"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="32dp" />
 
-    <Button
-        android:id="@+id/btn_language_picker"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="8dp"
-        android:backgroundTint="#2C2C2C"
-        android:textColor="#FFFFFF"
-        android:gravity="start|center_vertical"
-        android:paddingStart="12dp"
-        android:text="Hebrew, English" />
+        <RadioGroup
+            android:id="@+id/rg_language"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="8dp">
 
-    <Button
-        android:id="@+id/btn_view_expenses"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginEnd="16dp"
-        android:layout_marginTop="24dp"
-        android:text="@string/view_expenses"
-        android:backgroundTint="#333333"
-        android:textColor="#FFFFFF" />
+            <RadioButton
+                android:id="@+id/rb_lang_both"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hebrew + English"
+                android:textColor="#CCCCCC"
+                android:checked="true" />
 
-</LinearLayout>
+            <RadioButton
+                android:id="@+id/rb_lang_hebrew"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hebrew only  (עברית בלבד)"
+                android:textColor="#CCCCCC" />
+
+            <RadioButton
+                android:id="@+id/rb_lang_english"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="English only"
+                android:textColor="#CCCCCC" />
+
+        </RadioGroup>
+
+        <!-- View Expenses -->
+        <Button
+            android:id="@+id/btn_view_expenses"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginEnd="16dp"
+            android:layout_marginTop="32dp"
+            android:text="@string/view_expenses"
+            android:backgroundTint="#333333"
+            android:textColor="#FFFFFF" />
+
+    </LinearLayout>
+</ScrollView>

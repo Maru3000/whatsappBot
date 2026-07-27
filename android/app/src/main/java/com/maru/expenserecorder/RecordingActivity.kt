@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.speech.RecognitionListener
 import android.speech.RecognizerIntent
 import android.speech.SpeechRecognizer
@@ -30,6 +31,10 @@ class RecordingActivity : AppCompatActivity() {
     private var speechRecognizer: SpeechRecognizer? = null
     private val repository = ExpenseRepository()
 
+    // Auto-stop state
+    private var listenStartTime = 0L
+    private var lastValidPartial = ""
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         binding = ActivityRecordingBinding.inflate(layoutInflater)
@@ -52,6 +57,9 @@ class RecordingActivity : AppCompatActivity() {
             return
         }
 
+        listenStartTime = SystemClock.elapsedRealtime()
+        lastValidPartial = ""
+
         speechRecognizer?.destroy()
         speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this).apply {
             setRecognitionListener(object : RecognitionListener {
@@ -68,7 +76,7 @@ class RecordingActivity : AppCompatActivity() {
                 override fun onEndOfSpeech() { binding.tvStatus.text = "Processing…" }
                 override fun onError(error: Int) {
                     val msg = when (error) {
-                        SpeechRecognizer.ERROR_NO_MATCH -> "Didn't catch that — try again"
+                        SpeechRecognizer.ERROR_NO_MATCH    -> "Didn't catch that — try again"
                         SpeechRecognizer.ERROR_SPEECH_TIMEOUT -> "No speech detected"
                         else -> "Recognition error ($error)"
                     }
@@ -86,12 +94,21 @@ class RecordingActivity : AppCompatActivity() {
                         ?.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION)
                         ?.firstOrNull() ?: ""
                     binding.tvRecognized.text = text
-                    // Stop only when we have both an amount AND a real subject (not the default fallback)
-                    if (text.isNotBlank()) {
-                        val parsed = ExpenseParser.parse(text)
-                        if (parsed != null && parsed.description != "Cash expense") {
+
+                    // Only consider stopping after 1.5s minimum (prevents cutting off mid-sentence)
+                    val elapsed = SystemClock.elapsedRealtime() - listenStartTime
+                    if (elapsed < 1500L || text.isBlank()) return
+
+                    val parsed = ExpenseParser.parse(text)
+                    if (parsed != null && parsed.description != "Cash expense") {
+                        // Require 2 consecutive valid partials before stopping (debounce)
+                        if (lastValidPartial.isNotBlank()) {
                             speechRecognizer?.stopListening()
+                        } else {
+                            lastValidPartial = text
                         }
+                    } else {
+                        lastValidPartial = ""
                     }
                 }
                 override fun onEvent(t: Int, p: Bundle?) {}
@@ -100,17 +117,21 @@ class RecordingActivity : AppCompatActivity() {
 
         val savedLangs = PrefsKeys.prefs(this)
             .getString(PrefsKeys.PREF_SPEECH_LANGUAGES, PrefsKeys.DEFAULT_SPEECH_LANGUAGES)!!
-        val primaryLang = savedLangs.split(",").first().trim()
+        val langs = savedLangs.split(",").map { it.trim() }
+        val primaryLang = langs.first()
 
         val intent = Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH).apply {
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE, savedLangs)
             putExtra(RecognizerIntent.EXTRA_LANGUAGE_PREFERENCE, primaryLang)
-            putExtra(RecognizerIntent.EXTRA_ONLY_RETURN_LANGUAGE_PREFERENCE, false)
+            // Pass as String array for devices that support the array form of multi-language
+            if (langs.size > 1) {
+                putExtra("android.speech.extra.EXTRA_LANGUAGE_MULTI", langs.toTypedArray())
+            }
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 3)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
-            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 3500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
+            putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
         }
         speechRecognizer?.startListening(intent)
     }
